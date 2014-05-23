@@ -11,7 +11,18 @@
 ]]--
 if myHero.charName ~= "Vayne" then return end
 
---_G.PrintChat = function() end
+-- Auto Update
+local local_version = 14522
+local server_version = tonumber(GetWebResult("raw.github.com", "/Jo7j/BoL/master/version/GRVayne.version"))
+if server_version > local_version then
+	PrintChat("Script is outdated. Updating to version: " .. server_version .. "...")
+	PrintChat(SCRIPT_PATH .. "GRVayne.lua")
+	
+	DownloadFile("https://raw.github.com/Jo7j/BoL/master/GRVayne.lua", SCRIPT_PATH .. "GRVayne.lua", function()
+            PrintChat("Script updated. Please reload (F9).")
+        end)
+end
+-- End of Auto Update
 
 --[ DATA ]--
 function champTable()
