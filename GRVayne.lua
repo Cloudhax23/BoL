@@ -1,5 +1,6 @@
 --[[ 
-	GameRAT: Vayne 0.3a
+	GameRAT: Vayne
+		rev. 14522
 	
 	What needs to be done?
 	-Hero priority needs to be improved. The current hero priority algorithm does not take into account enemy damage capabilities and invulnerabilities.
@@ -8,161 +9,26 @@
 	-Issue with calcDamage function, this appears to have something to do with armor penetration/ghostblade
 	-Stop attacking objects if mousePos and myHero are near tumbleExploit
 	-Add more menu options. More customization.
+	-Avoid tumbling in bad situations
+	-Avoid tumbling after enemy is dead
 ]]--
 if myHero.charName ~= "Vayne" then return end
 
--- Auto Update
+--[ UPDATE ]--
 local local_version = 14522
 local server_version = tonumber(GetWebResult("raw.github.com", "/Jo7j/BoL/master/version/GRVayne.version"))
 if server_version > local_version then
 	PrintChat("Script is outdated. Updating to version: " .. server_version .. "...")
-	PrintChat(SCRIPT_PATH .. "GRVayne.lua")
-	
 	DownloadFile("https://raw.github.com/Jo7j/BoL/master/GRVayne.lua", SCRIPT_PATH .. "GRVayne.lua", function()
             PrintChat("Script updated. Please reload (F9).")
         end)
 end
--- End of Auto Update
+--[ END OF UPDATE ]--
 
 --[ DATA ]--
 function champTable()
 	return { 
-		Aatrox = {projSpeed = 0.348, yOffset=0}, 
-		Ahri = {projSpeed = 1.75, yOffset=0}, 
-		Akali = {projSpeed = 0.467, yOffset=0}, 
-		Alistar = {projSpeed = 0, yOffset=0}, 
-		Amumu = {projSpeed = 0.5, yOffset=0}, 
-		Anivia = {projSpeed = 1.4, yOffset=0}, 
-		Annie = {projSpeed = 1.2, yOffset=-13}, 
-		Ashe = {projSpeed = 2.0, yOffset=17}, 
-		Blitzcrank = {projSpeed = 0, yOffset=0}, 
-		Brand = {projSpeed = 2.0, yOffset=0}, 
-		Braum = {projSpeed = 0, yOffset=0}, 
-		Caitlyn = {projSpeed = 2.5, yOffset=0}, 
-		Cassiopeia = {projSpeed = 1.2, yOffset=-5}, 
-		Chogath = {projSpeed = 0.5, yOffset=16}, 
-		Corki = {projSpeed = 2.0, yOffset=0}, 
-		Darius = {projSpeed = 0, yOffset=0}, 
-		Diana = {projSpeed = 0.348, yOffset=0}, 
-		DrMundo = {projSpeed = 0, yOffset=0}, 
-		Draven = {projSpeed = 1.7, yOffset=0}, 
-		Elise = {projSpeed = 1.6, yOffset=0}, 
-		Evelynn = {projSpeed = 0.467, yOffset=0}, 
-		Ezreal = {projSpeed = 2.0, yOffset=0}, 
-		FiddleSticks = {projSpeed = 1.75, yOffset=7}, 
-		Fiora = {projSpeed = 0.467, yOffset=0}, 
-		Fizz = {projSpeed = 0, yOffset=0}, 
-		Galio = {projSpeed = 1.0, yOffset=0}, 
-		Gangplank = {projSpeed = 1.0, yOffset=0}, 
-		Garen = {projSpeed = 0.348, yOffset=-13}, 
-		Gragas = {projSpeed = 0, yOffset=0}, 
-		Graves = {projSpeed = 3.0, yOffset=16}, 
-		Hecarim = {projSpeed = 0.5, yOffset=0}, 
-		Heimerdinger = {projSpeed = 1.5, yOffset=0}, 
-		Irelia = {projSpeed = 0.467, yOffset=0}, 
-		Janna = {projSpeed = 1.2, yOffset=0}, 
-		JarvanIV = {projSpeed = 0.02, yOffset=0}, 
-		Jax = {projSpeed = 0.4, yOffset=0}, 
-		Jayce = {projSpeed = 0.348, yOffset=0}, 
-		Jinx = {projSpeed = 2.75, yOffset=12}, 
-		Karma = {projSpeed = 1.5, yOffset=0}, 
-		Karthus = {projSpeed = 1.2, yOffset=0}, 
-		Kassadin = {projSpeed = 0, yOffset=0}, 
-		Katarina = {projSpeed = 0.467, yOffset=0}, 
-		Kayle = {projSpeed = 1.8, yOffset=-55}, 
-		Kennen = {projSpeed = 1.6, yOffset=0}, 
-		Khazix = {projSpeed = 0.5, yOffset=0}, 
-		KogMaw = {projSpeed = 1.8, yOffset=0}, 
-		Leblanc = {projSpeed = 1.7, yOffset=0}, 
-		LeeSin = {projSpeed = 0, yOffset=0}, 
-		Leona = {projSpeed = 0.348, yOffset=-14}, 
-		Lissandra = {projSpeed = 2.0, yOffset=0}, 
-		Lucian = {projSpeed = 2.8, yOffset=-5}, 
-		Lulu = {projSpeed = 1.45, yOffset=-13}, 
-		Lux = {projSpeed = 1.6, yOffset=-14}, 
-		Malphite = {projSpeed = 1.0, yOffset=-14}, 
-		Malzahar = {projSpeed = 2.0, yOffset=-3}, 
-		Maokai = {projSpeed = 0, yOffset=0}, 
-		MasterYi = {projSpeed = 0, yOffset=-34}, 
-		MissFortune = {projSpeed = 2.0, yOffset=-3}, 
-		Mordekaiser = {projSpeed = 0, yOffset=0}, 
-		Morgana = {projSpeed = 1.6, yOffset=-4}, 
-		MonkeyKing = {projSpeed = 0.02, yOffset=-2}, 
-		Nami = {projSpeed = 1.5, yOffset=0}, 
-		Nasus = {projSpeed = 0, yOffset=16}, 
-		Nautilus = {projSpeed = 1.0, yOffset=-14}, 
-		Nidalee = {projSpeed = 1.75, yOffset=0}, 
-		Nocturne = {projSpeed = 0, yOffset=0}, 
-		Nunu = {projSpeed = 0.5, yOffset=-13}, 
-		Olaf = {projSpeed = 0.348, yOffset=0}, 
-		Orianna = {projSpeed = 1.45, yOffset=-7}, 
-		Pantheon = {projSpeed = 0.02, yOffset=0}, 
-		Poppy = {projSpeed = 0.5, yOffset=0}, 
-		Quinn = {projSpeed = 2.0, yOffset=0}, 
-		Rammus = {projSpeed = 0, yOffset=0}, 
-		Renekton = {projSpeed = 0, yOffset=0}, 
-		Rengar = {projSpeed = 0, yOffset=0}, 
-		Riven = {projSpeed = 0.348, yOffset=0}, 
-		Rumble = {projSpeed = 0.348, yOffset=0}, 
-		Ryze = {projSpeed = 2.4, yOffset=-13}, 
-		Sejuani = {projSpeed = 0.5, yOffset=0}, 
-		Shaco = {projSpeed = 0, yOffset=0}, 
-		Shen = {projSpeed = 0.4, yOffset=-12}, 
-		Shyvana = {projSpeed = 0, yOffset=7}, 
-		Singed = {projSpeed = 0.7, yOffset=0}, 
-		Sion = {projSpeed = 0, yOffset=0}, 
-		Sivir = {projSpeed = 1.75, yOffset=8}, 
-		Skarner = {projSpeed = 0.5, yOffset=0}, 
-		Sona = {projSpeed = 1.5, yOffset=-24}, 
-		Soraka = {projSpeed = 1.0, yOffset=-23}, 
-		Swain = {projSpeed = 1.6, yOffset=0}, 
-		Syndra = {projSpeed = 1.8, yOffset=0}, 
-		Talon = {projSpeed = 0, yOffset=0}, 
-		Taric = {projSpeed = 0, yOffset=16}, 
-		Teemo = {projSpeed = 1.3, yOffset=0}, 
-		Thresh = {projSpeed = 0, yOffset=0}, 
-		Tristana = {projSpeed = 2.25, yOffset=-3}, 
-		Trundle = {projSpeed = 0.348, yOffset=45}, 
-		Tryndamere = {projSpeed = 0.348, yOffset=0}, 
-		TwistedFate = {projSpeed = 1.5, yOffset=0}, 
-		Twitch = {projSpeed = 2.5, yOffset=-30}, 
-		Udyr = {projSpeed = 0.467, yOffset=12}, 
-		Urgot = {projSpeed = 1.3, yOffset=0}, 
-		Varus = {projSpeed = 2.0, yOffset=0}, 
-		Vayne = {projSpeed = 2.0, yOffset=12}, 
-		Veigar = {projSpeed = 1.1, yOffset=0}, 
-		Velkoz = {projSpeed = 2.0, yOffset=0}, 
-		Vi = {projSpeed = 1.0, yOffset=0}, 0, 
-		Viktor = {projSpeed = 2.3, yOffset=0}, 
-		Vladimir = {projSpeed = 1.4, yOffset=0}, 
-		Volibear = {projSpeed = 0.467, yOffset=0}, 
-		Warwick = {projSpeed = 0, yOffset=18}, 
-		Xerath = {projSpeed = 1.2, yOffset=0}, 
-		XinZhao = {projSpeed = 0.02, yOffset=19}, 
-		Yasuo = {projSpeed = 0.348, yOffset=0}, 
-		Yorick = {projSpeed = 0, yOffset=0}, 
-		Zac = {projSpeed = 1.0, yOffset=0}, 
-		Zed = {projSpeed = 0.467, yOffset=0}, 
-		Ziggs = {projSpeed = 1.5, yOffset=0}, 
-		Zilean = {projSpeed = 1.2, yOffset=0}, 
-		Zyra = {projSpeed = 1.7, yOffset=0}, 
-		MalzaharVoidling = {projSpeed = 0}, 
-		Blue_Minion_Basic = {projSpeed = 0, yOffset=0}, 
-		Blue_Minion_Wizard = {projSpeed = 0.65, yOffset=0}, 
-		Blue_Minion_MechCannon = {projSpeed = 1.2, yOffset=0}, 
-		Blue_Minion_MechMelee = {projSpeed = 0, yOffset=0}, 
-		Red_Minion_Basic = {projSpeed = 0, yOffset=0}, 
-		Red_Minion_Wizard = {projSpeed = 0.65, yOffset=0}, 
-		Red_Minion_MechCannon = {projSpeed = 1.2, yOffset=0}, 
-		Red_Minion_MechMelee = {projSpeed = 0, yOffset=0}, 
-		OrderTurretNormal = {projSpeed = 1.2, yOffset=0}, 
-		OrderTurretNormal2 = {projSpeed = 1.2, yOffset=0}, 
-		OrderTurretDragon = {projSpeed = 1.2, yOffset=0}, 
-		OrderTurretAngel = {projSpeed = 1.2, yOffset=0}, 
-		ChaosTurretWorm = {projSpeed = 1.2, yOffset=0}, 
-		ChaosTurretWorm2 = {projSpeed = 1.2, yOffset=0}, 
-		ChaosTurretGiant = {projSpeed = 1.2, yOffset=0}, 
-		ChaosTurretNormal = {projSpeed = 1.2, yOffset=0}
+		Aatrox = {projSpeed = 0.348},Ahri = {projSpeed = 1.75},Akali = {projSpeed = 0.467},Alistar = {projSpeed = 0},Amumu = {projSpeed = 0.5},Anivia = {projSpeed = 1.4},Annie = {projSpeed = 1.2},Ashe = {projSpeed = 2.0},Blitzcrank = {projSpeed = 0},Brand = {projSpeed = 2.0},Braum = {projSpeed = 0},Caitlyn = {projSpeed = 2.5},Cassiopeia = {projSpeed = 1.2},Chogath = {projSpeed = 0.5},Corki = {projSpeed = 2.0},Darius = {projSpeed = 0},Diana = {projSpeed = 0.348},DrMundo = {projSpeed = 0},Draven = {projSpeed = 1.7},Elise = {projSpeed = 1.6},Evelynn = {projSpeed = 0.467},Ezreal = {projSpeed = 2.0},FiddleSticks = {projSpeed = 1.75},Fiora = {projSpeed = 0.467},Fizz = {projSpeed = 0},Galio = {projSpeed = 1.0},Gangplank = {projSpeed = 1.0},Garen = {projSpeed = 0.348},Gragas = {projSpeed = 0},Graves = {projSpeed = 3.0},Hecarim = {projSpeed = 0.5},Heimerdinger = {projSpeed = 1.5},Irelia = {projSpeed = 0.467},Janna = {projSpeed = 1.2},JarvanIV = {projSpeed = 0.02},Jax = {projSpeed = 0.4},Jayce = {projSpeed = 0.348},Jinx = {projSpeed = 2.75},Karma = {projSpeed = 1.5},Karthus = {projSpeed = 1.2},Kassadin = {projSpeed = 0},Katarina = {projSpeed = 0.467},Kayle = {projSpeed = 1.8},Kennen = {projSpeed = 1.6},Khazix = {projSpeed = 0.5},KogMaw = {projSpeed = 1.8},Leblanc = {projSpeed = 1.7},LeeSin = {projSpeed = 0},Leona = {projSpeed = 0.348},Lissandra = {projSpeed = 2.0},Lucian = {projSpeed = 2.8},Lulu = {projSpeed = 1.45},Lux = {projSpeed = 1.6},Malphite = {projSpeed = 1.0},Malzahar = {projSpeed = 2.0},Maokai = {projSpeed = 0},MasterYi = {projSpeed = 0},MissFortune = {projSpeed = 2.0},Mordekaiser = {projSpeed = 0},Morgana = {projSpeed = 1.6},MonkeyKing = {projSpeed = 0.02},Nami = {projSpeed = 1.5},Nasus = {projSpeed = 0},Nautilus = {projSpeed = 1.0},Nidalee = {projSpeed = 1.75},Nocturne = {projSpeed = 0},Nunu = {projSpeed = 0.5},Olaf = {projSpeed = 0.348},Orianna = {projSpeed = 1.45},Pantheon = {projSpeed = 0.02},Poppy = {projSpeed = 0.5},Quinn = {projSpeed = 2.0},Rammus = {projSpeed = 0},Renekton = {projSpeed = 0},Rengar = {projSpeed = 0},Riven = {projSpeed = 0.348},Rumble = {projSpeed = 0.348},Ryze = {projSpeed = 2.4},Sejuani = {projSpeed = 0.5},Shaco = {projSpeed = 0},Shen = {projSpeed = 0.4},Shyvana = {projSpeed = 0},Singed = {projSpeed = 0.7},Sion = {projSpeed = 0},Sivir = {projSpeed = 1.75},Skarner = {projSpeed = 0.5},Sona = {projSpeed = 1.5},Soraka = {projSpeed = 1.0},Swain = {projSpeed = 1.6},Syndra = {projSpeed = 1.8},Talon = {projSpeed = 0},Taric = {projSpeed = 0},Teemo = {projSpeed = 1.3},Thresh = {projSpeed = 0},Tristana = {projSpeed = 2.25},Trundle = {projSpeed = 0.348},Tryndamere = {projSpeed = 0.348},TwistedFate = {projSpeed = 1.5},Twitch = {projSpeed = 2.5},Udyr = {projSpeed = 0.467},Urgot = {projSpeed = 1.3},Varus = {projSpeed = 2.0},Vayne = {projSpeed = 2.0},Veigar = {projSpeed = 1.1},Velkoz = {projSpeed = 2.0},Vi = {projSpeed = 1.0}, Viktor = {projSpeed = 2.3},Vladimir = {projSpeed = 1.4},Volibear = {projSpeed = 0.467},Warwick = {projSpeed = 0},Xerath = {projSpeed = 1.2},XinZhao = {projSpeed = 0.02},Yasuo = {projSpeed = 0.348},Yorick = {projSpeed = 0},Zac = {projSpeed = 1.0},Zed = {projSpeed = 0.467},Ziggs = {projSpeed = 1.5},Zilean = {projSpeed = 1.2},Zyra = {projSpeed = 1.7},MalzaharVoidling = {projSpeed = 0},Blue_Minion_Basic = {projSpeed = 0},Blue_Minion_Wizard = {projSpeed = 0.65},Blue_Minion_MechCannon = {projSpeed = 1.2},Blue_Minion_MechMelee = {projSpeed = 0},Red_Minion_Basic = {projSpeed = 0},Red_Minion_Wizard = {projSpeed = 0.65},Red_Minion_MechCannon = {projSpeed = 1.2},Red_Minion_MechMelee = {projSpeed = 0},OrderTurretNormal = {projSpeed = 1.2},OrderTurretNormal2 = {projSpeed = 1.2},OrderTurretDragon = {projSpeed = 1.2},OrderTurretAngel = {projSpeed = 1.2},ChaosTurretWorm = {projSpeed = 1.2},ChaosTurretWorm2 = {projSpeed = 1.2},ChaosTurretGiant = {projSpeed = 1.2},ChaosTurretNormal = {projSpeed = 1.2}
 	}
 end
 local tumbleExploit = {
