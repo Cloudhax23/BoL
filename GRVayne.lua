@@ -18,15 +18,15 @@ if VIP_USER then
 end
 if myHero.charName ~= "Vayne" then return end
 
---[ UPDATE ]-- UNCOMMENT THIS ON RELEASE
---[[local local_version = 14522
+--[ UPDATE ]--
+local local_version = 14522
 local server_version = tonumber(GetWebResult("raw.github.com", "/Jo7j/BoL/master/version/GRVayne.version"))
 if server_version > local_version then
 	PrintChat("Script is outdated. Updating to version: " .. server_version .. "...")
 	DownloadFile("https://raw.github.com/Jo7j/BoL/master/GRVayne.lua", SCRIPT_PATH .. "GRVayne.lua", function()
             PrintChat("Script updated. Please reload (F9).")
         end)
-end]]
+end
 --[ END OF UPDATE ]--
 
 --[ DATA ]--
