@@ -5,7 +5,7 @@
 	What needs to be done?
 	-Insert minions into table upon loading script.
 	-Auto-condemn gap closers.
-	-Smart Q [WIP]
+	-Smart Q
 	-Issue with calcDamage function, this appears to have something to do with armor penetration/ghostblade
 	-Stop attacking objects if mousePos and myHero are near tumbleExploit
 	-Add more menu options. More customization.
@@ -13,21 +13,20 @@
 	-Cancel auto condemn if not going to be stunned [Done but not confirmed]
 ]]--
 
-if VIP_USER and FileExist(LIB_PATH .. "/Selector.lua") then
+if VIP_USER then
 	require "Selector"
-	local USE_SELECTOR = true
 end
 if myHero.charName ~= "Vayne" then return end
 
---[ UPDATE ]--
-local local_version = 14524
+--[ UPDATE ]-- UNCOMMENT THIS ON RELEASE
+--[[local local_version = 14522
 local server_version = tonumber(GetWebResult("raw.github.com", "/Jo7j/BoL/master/version/GRVayne.version"))
 if server_version > local_version then
 	PrintChat("Script is outdated. Updating to version: " .. server_version .. "...")
 	DownloadFile("https://raw.github.com/Jo7j/BoL/master/GRVayne.lua", SCRIPT_PATH .. "GRVayne.lua", function()
             PrintChat("Script updated. Please reload (F9).")
         end)
-end
+end]]
 --[ END OF UPDATE ]--
 
 --[ DATA ]--
@@ -52,7 +51,6 @@ local lastAttack = 0
 local windUpTime = 0
 local attackCooldown = 0
 local targetArray = {}
-local tp = VIP_USER and TargetPredictionVIP(715, 1200, 0.25) or TargetPrediction(715, 1200, 0.25)
 local tp = VIP_USER and TargetPredictionVIP(715, 1200, 0.25) or TargetPrediction(715, 1200, 0.25)
 
 --[ Functions ]--
@@ -175,44 +173,6 @@ function smartQ(enemy)
 	return false
 end
 
-function findTarget(method, range)
-	local result = nil
-	if method == 0 then --LOWEST
-		local LOWEST = math.huge
-		for _, enemy in pairs(enemyHeroes) do
-			if GetDistance(myHero, enemy) < range then
-				local difficulty = (100/(100+enemy.armor)*enemy.health)/calcDamage(myHero, enemy)
-				if difficulty < LOWEST then
-					LOWEST = difficulty
-					result = enemy
-				end
-			end
-		end
-	elseif method == 1 then --MOST_DANGEROUS
-		local MOST_DANGEROUS = math.huge
-		for _, enemy in pairs(enemyHeroes) do
-			if GetDistance(myHero, enemy) < range then
-				local capability = (enemy.totalDamage*enemy.attackSpeed)*enemy.armorPenPercent
-				if enemy.ap > enemy.totalDamage then
-					local manaCost = 0
-					local spells = {_Q, _W, _E, _R}
-					for k, spell in pairs(spells) do
-						if enemy:CanUseSpell(spell) == READY then
-							manaCost = manaCost+enemy:GetSpellData(spell).mana
-						end
-					end
-					local capability = (enemy.ap*(enemy.mana/manaCost))*enemy.magicPenPercent
-				end
-				if capability > MOST_DANGEROUS then
-					MOST_DANGEROUS = capability
-					result = enemy
-				end
-			end
-		end
-	end
-	return result
-end
-
 --[ Callbacks ]--
 function OnLoad()
 	GRVayne = scriptConfig("GameRAT: Vayne", "GRVayne")
@@ -225,9 +185,7 @@ function OnLoad()
 	GRVayne:addParam("smartQ", "Smart Q", SCRIPT_PARAM_ONOFF, false)
 	GRVayne:addParam("debug", "Debug", SCRIPT_PARAM_ONOFF, false)
 	
-	if USE_SELECTOR then
-		Selector.Instance()
-	end
+	Selector.Instance()
 	
 	PrintChat("GameRAT: Vayne")
 end
@@ -251,7 +209,7 @@ function OnProcessSpell(object, spellProc)
 	elseif object.type:find("obj_AI_") and object.team == myHero.team then
 		for i, minion in pairs(targetArray) do
 			if GetDistance(targetArray[i], spellProc.endPos) < 5 then
-				if champTable()[object.charName] == nil then if self.debug then PrintChat("projSpeed not found [" .. object.charName .. "]") end return end -- error report
+				if champTable()[object.charName] == nil then if GRVayne.debug then PrintChat("projSpeed not found [" .. object.charName .. "]") end return end -- error report
 				if champTable()[object.charName].projSpeed == 0 then return end
 				local tmp = {
 					dmg=calcDamage(object, minion), 
@@ -289,12 +247,18 @@ function autoCombo_OnTick()
 	
 	if not QREADY and not EREADY then return false end
 	
-	local enemy = USE_SELECTOR and Selector.GetTarget(MOST_DANGEROUS_ADVANCED, 715) or findTarget(1, 715)
+	local enemy = Selector.GetTarget(MOST_DANGEROUS_ADVANCED, 715)
 	if enemy then
 			if EREADY and myHero.mana > 90 then -- Auto Condemn
 				if GetDistance(myHero, enemy) < 715 and canCondemn(myHero, enemy) then
 					CastSpell(_E, enemy)
 					return true
+				--[[elseif QREADY and myHero.mana > 120 then -- Tumble then condemn
+					local tumblePos = myHero+(Vector(enemy)-myHero):normalized()*300
+					if GetDistance(tumblePos, enemy) < 715 and canCondemn(tumblePos, enemy, 0.5) then
+						CastSpell(_Q, tumblePos.x, tumblePos.z)
+						return true
+					end]]
 				end
 			end
 			
@@ -310,13 +274,13 @@ function autoCombo_OnTick()
 end
 
 function autoHarass_OnTick()
-	local enemy = USE_SELECTOR and Selector.GetTarget(LOWEST, getTrueRange()) or findTarget(0, getTrueRange())
-	if enemy then
+	local Target = Selector.GetTarget(NEAREST, getTrueRange())
+	if Target then
 		lastAttack = getTick()+getLatency()
 		if VIP_USER then
-			Packet('S_MOVE', {type=3, targetNetworkId=enemy.networkID}):send()
+			Packet('S_MOVE', {type=3, targetNetworkId=Target.networkID}):send()
 		else
-			myHero:Attack(enemy)
+			myHero:Attack(Target)
 		end
 		return true
 	end
@@ -422,7 +386,10 @@ function OnDraw()
 					--PrintChat("deg: " .. math.deg(angle))
 					tumblePos = Vector(myHero.x+(math.cos(angle)*300), myHero.y, myHero.z+(math.sin(angle)*300))
 				end
-				DrawCircle(tumblePos.x, tumblePos.y, tumblePos.z, 50, ARGB(255, 255, 255, 255))
+				DrawLine3D(myHero.x, myHero.y, myHero.z, tumblePos.x, tumblePos.y, tumblePos.z, 2, ARGB(255, 128, 0, 129))
+				DrawLine3D(tumblePos.x, tumblePos.y, tumblePos.z, enemy.x, enemy.y, enemy.z, 2, ARGB(255, 128, 0, 129))
+				DrawLine3D(myHero.x, myHero.y, myHero.z, enemy.x, enemy.y, enemy.z, 2, ARGB(255, 128, 0, 129))
+				--DrawCircle(tumblePos.x, tumblePos.y, tumblePos.z, 50, ARGB(255, 255, 255, 255))
 			end
 		end
 	end
