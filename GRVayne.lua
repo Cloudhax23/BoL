@@ -19,7 +19,7 @@ end
 if myHero.charName ~= "Vayne" then return end
 
 --[ UPDATE ]--
-local local_version = 14522
+local local_version = 14524
 local server_version = tonumber(GetWebResult("raw.github.com", "/Jo7j/BoL/master/version/GRVayne.version"))
 if server_version > local_version then
 	PrintChat("Script is outdated. Updating to version: " .. server_version .. "...")
