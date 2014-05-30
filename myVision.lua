@@ -5,7 +5,7 @@ local SPRITE_LOCATION = "myVision\\"
 
 
 PrintChat(SPRITE_PATH .. SPRITE_LOCATION .. "SummonerFlash.png")
-local local_version = 14529
+local local_version = 14530
 local server_version = tonumber(GetWebResult("raw.github.com", "/Jo7j/BoL/master/version/myVision.version"))
 if server_version > local_version then
 	PrintChat("Script is outdated. Updating to version: " .. server_version .. "...")
