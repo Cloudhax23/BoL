@@ -4,7 +4,7 @@ local SPRITE_LOCATION = "myVision\\"
 local AUTO_UPDATE = true
 --[ END OF CONSTANTS ]--
 
-if AUTOUPDATE then
+if AUTO_UPDATE then
 	local local_version = 14530
 	local server_version = tonumber(GetWebResult("raw.github.com", "/Jo7j/BoL/master/version/myVision.version"))
 	if server_version > local_version then
