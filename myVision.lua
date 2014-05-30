@@ -19,14 +19,16 @@ if AUTO_UPDATE then
 	end
 
 	local sprites = {"SummonerClairvoyance.png", "SummonerBarrier.png", "SummonerBoost.png", "SummonerDot.png", "SummonerExhaust.png", "SummonerFlash.png", "SummonerHaste.png", "SummonerHeal.png", "SummonerMana.png", "SummonerRevive.png", "SummonerSmite.png", "SummonerTeleport.png", "Minimap_Ward_Green_Enemy.png", "Minimap_Ward_Pink_Enemy.png"}
+	local downloading_sprites = false
 	for _, sprite in pairs(sprites) do
 		if not FileExist(SPRITE_PATH .. SPRITE_LOCATION .. sprite) then
-			DownloadFile("https://raw.github.com/Jo7j/BoL/master/Sprites/" .. sprite, SPRITE_PATH .. SPRITE_LOCATION .. sprite, function()
+			downloading_sprites = true
+			DownloadFile("https://raw.github.com/Jo7j/BoL/master/Sprites/" .. sprite, SPRITE_PATH .. SPRITE_LOCATION .. sprite, function() 
 				PrintChat(sprite .. " downloaded.")
 			end)
 		end
 	end
-	if server_version > local_version then return end
+	if server_version > local_version or downloading_sprites then return end
 end
 
 --[ GLOBALS ]--
@@ -198,6 +200,8 @@ function OnLoad()
 			end
 		end
 	end
+	
+	PrintChat("myVision rev. 13530")
 end
 
 --[[function OnCreateObj(object)
@@ -304,9 +308,15 @@ end
 
 function OnUnload()
 	for i, spell in pairs(spellMeta) do
-		spellMeta[i].sprite:Release()
+		if spellMeta[i].sprite ~= nil then
+			spellMeta[i].sprite:Release()
+		end
 	end
-	hiddenObjects.sprites.GreenWard:Release()
-	hiddenObjects.sprites.PinkWard:Release()
+	if hiddenObjects.sprites.GreenWard ~= nil then
+		hiddenObjects.sprites.GreenWard:Release()
+	end
+	if hiddenObjects.sprites.PinkWard ~= nil then
+		hiddenObjects.sprites.PinkWard:Release()
+	end
 end
 --[ END OF CALLBACKS ]--
