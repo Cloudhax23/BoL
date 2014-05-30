@@ -4,7 +4,6 @@ local SPRITE_LOCATION = "myVision\\"
 --[ END OF CONSTANTS ]--
 
 
-PrintChat(SPRITE_PATH .. SPRITE_LOCATION .. "SummonerFlash.png")
 local local_version = 14530
 local server_version = tonumber(GetWebResult("raw.github.com", "/Jo7j/BoL/master/version/myVision.version"))
 if server_version > local_version then
