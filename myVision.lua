@@ -1,42 +1,43 @@
 --[ CONSTANTS ]--
 local WARD_RANGE = 1450
+local SPRITE_LOCATION = "myVision\\"
 --[ END OF CONSTANTS ]--
 
 --[ GLOBALS ]--
 local spellMeta = {
-	{name="SummonerClairvoyance",sprite=createSprite("myVision\\SummonerClairvoyance.png")}, 
-	{name="SummonerBarrier",			sprite=createSprite("myVision\\SummonerBarrier.png")}, 
-	{name="SummonerBoost",			sprite=createSprite("myVision\\SummonerBoost.png")}, 
-	{name="SummonerDot",			sprite=createSprite("myVision\\SummonerDot.png")}, 
-	{name="SummonerExhaust",		sprite=createSprite("myVision\\SummonerExhaust.png")}, 
-	{name="SummonerFlash",			sprite=createSprite("myVision\\SummonerFlash.png")}, 
-	{name="SummonerHaste",			sprite=createSprite("myVision\\SummonerHaste.png")}, 
-	{name="SummonerHeal",			sprite=createSprite("myVision\\SummonerHeal.png")}, 
-	{name="SummonerMana",			sprite=createSprite("myVision\\SummonerMana.png")}, 
-	{name="SummonerRevive",		sprite=createSprite("myVision\\SummonerRevive.png")}, 
-	{name="SummonerSmite",			sprite=createSprite("myVision\\SummonerSmite.png")}, 
-	{name="SummonerTeleport",		sprite=createSprite("myVision\\SummonerTeleport.png")}, 
+	{name="SummonerClairvoyance", sprite=createSprite(SPRITE_LOCATION .. "SummonerClairvoyance.png")}, 
+	{name="SummonerBarrier", sprite=createSprite(SPRITE_LOCATION .. "SummonerBarrier.png")}, 
+	{name="SummonerBoost", sprite=createSprite(SPRITE_LOCATION .. "SummonerBoost.png")}, 
+	{name="SummonerDot", sprite=createSprite(SPRITE_LOCATION .. "SummonerDot.png")}, 
+	{name="SummonerExhaust", sprite=createSprite(SPRITE_LOCATION .. "SummonerExhaust.png")}, 
+	{name="SummonerFlash", sprite=createSprite(SPRITE_LOCATION .. "SummonerFlash.png")}, 
+	{name="SummonerHaste", sprite=createSprite(SPRITE_LOCATION .. "SummonerHaste.png")}, 
+	{name="SummonerHeal", sprite=createSprite(SPRITE_LOCATION .. "SummonerHeal.png")}, 
+	{name="SummonerMana", sprite=createSprite(SPRITE_LOCATION .. "SummonerMana.png")}, 
+	{name="SummonerRevive", sprite=createSprite(SPRITE_LOCATION .. "SummonerRevive.png")}, 
+	{name="SummonerSmite", sprite=createSprite(SPRITE_LOCATION .. "SummonerSmite.png")}, 
+	{name="SummonerTeleport", sprite=createSprite(SPRITE_LOCATION .. "SummonerTeleport.png")}, 
 }
 hiddenObjects = {
 	sprites = {
-		GreenWard = createSprite("myVision\\Minimap_Ward_Green_Enemy.png"), 
-		PinkWard = createSprite("myVision\\Minimap_Ward_Pink_Enemy.png")
+		GreenWard = createSprite(SPRITE_LOCATION .. "Minimap_Ward_Green_Enemy.png"), 
+		PinkWard = createSprite(SPRITE_LOCATION .. "Minimap_Ward_Pink_Enemy.png")
 	}, 
 	vision = {
-		{name = "Vision Ward", 							spellName = "VisionWard", 				duration = math.huge, 	color = ARGB(255, 255, 0, 255)}, 
-		{name = "Stealth Ward", 							spellName = "SightWard", 				duration = 180, 			color = ARGB(255, 0, 255, 0)}, 
-		{name = "Warding Totem (Trinket)", 			spellName = "TrinketTotemLvl1", 	duration = 60, 			color = ARGB(255, 0, 255, 0)}, 
-		{name = "Warding Totem (Trinket)", 			spellName = "trinkettotemlvl2", 		duration = 120, 			color = ARGB(255, 0, 255, 0)}, 
-		{name = "Greater Stealth Totem (Trinket)", 	spellName = "TrinketTotemLvl3", 	duration = 180, 			color = ARGB(255, 0, 255, 0)}, 
-		{name = "Greater Vision Totem (Trinket)", 	spellName = "TrinketTotemLvl3B", 	duration = 180, 			color = ARGB(255, 0, 255, 0)}, 
-		{name = "Wriggle's Lantern", 						spellName = "wrigglelantern", 			duration = 180, 			color = ARGB(255, 0, 255, 0)}, 
-		{name = "Ghost Ward", 							spellName = "ItemGhostWard", 		duration = 180, 			color = ARGB(255, 0, 255, 0)}, 
+		{name = "Vision Ward", spellName = "VisionWard", duration = math.huge, color = ARGB(255, 255, 0, 255)}, 
+		{name = "Stealth Ward", spellName = "SightWard", duration = 180, color = ARGB(255, 0, 255, 0)}, 
+		{name = "Warding Totem (Trinket)", spellName = "TrinketTotemLvl1", duration = 60, color = ARGB(255, 0, 255, 0)}, 
+		{name = "Warding Totem (Trinket)", spellName = "trinkettotemlvl2", duration = 120, color = ARGB(255, 0, 255, 0)}, 
+		{name = "Greater Stealth Totem (Trinket)", spellName = "TrinketTotemLvl3", duration = 180, color = ARGB(255, 0, 255, 0)}, 
+		{name = "Greater Vision Totem (Trinket)", spellName = "TrinketTotemLvl3B", duration = 180, color = ARGB(255, 0, 255, 0)}, 
+		{name = "Wriggle's Lantern", spellName = "wrigglelantern", duration = 180, color = ARGB(255, 0, 255, 0)}, 
+		{name = "Ghost Ward", spellName = "ItemGhostWard", duration = 180, color = ARGB(255, 0, 255, 0)}, 
 	}, 
 	traps = {
-		{name = "Yordle Snap Trap", 						spellName = "CaitlynYordleTrap", 	duration = 240, 			color = ARGB(255, 255, 0, 0)}, 
-		{name = "Jack In The Box", 						spellName = "JackInTheBox", 			duration = 60, 			color = ARGB(255, 255, 0, 0)}, 
-		{name = "Bushwhack", 								spellName = "Bushwhack", 				duration = 240, 			color = ARGB(255, 255, 0, 0)}, 
-		{name = "Noxious Trap", 							spellName = "BantamTrap", 			duration = 600, 			color = ARGB(255, 255, 0, 0)}, 
+		{name = "Yordle Snap Trap", spellName = "CaitlynYordleTrap", duration = 240, color = ARGB(255, 255, 0, 0)}, 
+		{name = "Jack In The Box", spellName = "JackInTheBox", duration = 60, color = ARGB(255, 255, 0, 0)}, 
+		{name = "Bushwhack", spellName = "Bushwhack", duration = 240, color = ARGB(255, 255, 0, 0)}, 
+		{name = "Noxious Trap", spellName = "BantamTrap", duration = 600, color = ARGB(255, 255, 0, 0)}, 
 	}, 
 	objects = {}
 }
