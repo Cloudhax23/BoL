@@ -1,32 +1,33 @@
 --[ CONSTANTS ]--
 local WARD_RANGE = 1450
 local SPRITE_LOCATION = "myVision\\"
+local AUTO_UPDATE = true
 --[ END OF CONSTANTS ]--
 
-
-local local_version = 14530
-local server_version = tonumber(GetWebResult("raw.github.com", "/Jo7j/BoL/master/version/myVision.version"))
-if server_version > local_version then
-	PrintChat("Script is outdated. Updating to version: " .. server_version .. "...")
-	DownloadFile("https://raw.github.com/Jo7j/BoL/master/myVision.lua", SCRIPT_PATH .. "myVision.lua", function()
-			PrintChat("Script updated. Please reload (F9).")
-	end)
-end
-
-if not DirectoryExist(SPRITE_PATH .. SPRITE_LOCATION) then
-	CreateDirectory(SPRITE_PATH .. SPRITE_LOCATION)
-end
-
-local sprites = {"SummonerClairvoyance.png", "SummonerBarrier.png", "SummonerBoost.png", "SummonerDot.png", "SummonerExhaust.png", "SummonerFlash.png", "SummonerHaste.png", "SummonerHeal.png", "SummonerMana.png", "SummonerRevive.png", "SummonerSmite.png", "SummonerTeleport.png", "Minimap_Ward_Green_Enemy.png", "Minimap_Ward_Pink_Enemy.png"}
-for _, sprite in pairs(sprites) do
-	if not FileExist(SPRITE_PATH .. SPRITE_LOCATION .. sprite) then
-		DownloadFile("https://raw.github.com/Jo7j/BoL/master/Sprites/" .. sprite, SPRITE_PATH .. SPRITE_LOCATION .. sprite, function()
-			PrintChat(sprite .. " downloaded.")
+if AUTOUPDATE then
+	local local_version = 14530
+	local server_version = tonumber(GetWebResult("raw.github.com", "/Jo7j/BoL/master/version/myVision.version"))
+	if server_version > local_version then
+		PrintChat("Script is outdated. Updating to version: " .. server_version .. "...")
+		DownloadFile("https://raw.github.com/Jo7j/BoL/master/myVision.lua", SCRIPT_PATH .. "myVision.lua", function()
+				PrintChat("Script updated. Please reload (F9).")
 		end)
 	end
-end
 
-if server_version > local_version then return end
+	if not DirectoryExist(SPRITE_PATH .. SPRITE_LOCATION) then
+		CreateDirectory(SPRITE_PATH .. SPRITE_LOCATION)
+	end
+
+	local sprites = {"SummonerClairvoyance.png", "SummonerBarrier.png", "SummonerBoost.png", "SummonerDot.png", "SummonerExhaust.png", "SummonerFlash.png", "SummonerHaste.png", "SummonerHeal.png", "SummonerMana.png", "SummonerRevive.png", "SummonerSmite.png", "SummonerTeleport.png", "Minimap_Ward_Green_Enemy.png", "Minimap_Ward_Pink_Enemy.png"}
+	for _, sprite in pairs(sprites) do
+		if not FileExist(SPRITE_PATH .. SPRITE_LOCATION .. sprite) then
+			DownloadFile("https://raw.github.com/Jo7j/BoL/master/Sprites/" .. sprite, SPRITE_PATH .. SPRITE_LOCATION .. sprite, function()
+				PrintChat(sprite .. " downloaded.")
+			end)
+		end
+	end
+	if server_version > local_version then return end
+end
 
 --[ GLOBALS ]--
 local spellMeta = {
