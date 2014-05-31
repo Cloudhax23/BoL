@@ -9,6 +9,9 @@
 	-Altered minimap offsets for better accuracy
 	-Changed WARD_RANGE from 1450 to 1200
 	-Added packet support for hidden objects
+	
+	145311
+	-Fixed issue with draw random pink wards
 ]]
 
 --[ CONSTANTS ]--
@@ -16,7 +19,7 @@ local WARD_RANGE = 1200
 local TRAP_RANGE = 300
 local SPRITE_LOCATION = "myVision\\"
 local AUTO_UPDATE = true
-local VERSION = 14531
+local VERSION = 145311
 --[ END OF CONSTANTS ]--
 
 if AUTO_UPDATE then
@@ -207,6 +210,7 @@ function OnLoad()
 	myVision:addSubMenu("Hidden Objects", "hiddenObjects")
 	myVision.hiddenObjects:addParam("drawOnMinimap", "Draw On Minimap", SCRIPT_PARAM_ONOFF, true)
 	myVision.hiddenObjects:addParam("drawCreator", "Draw Creator", SCRIPT_PARAM_ONOFF, true)
+	myVision.hiddenObjects:addParam("drawVision", "Draw Vision", SCRIPT_PARAM_ONOFF, false)
 	myVision.hiddenObjects:addParam("useCircles", "Use Circles", SCRIPT_PARAM_ONOFF, false)
 	
 	
@@ -247,9 +251,12 @@ function OnRecvPacket(p)
 			local networkID = p:DecodeF()
 			p.pos = 53
 			local object = {x = p:DecodeF(), y = p:DecodeF(), z = p:DecodeF()}
-			local obj = hiddenObjectByID(id)
-			if obj and not objectExist(object) then
-				table.insert(hiddenObjects.objects, {x=object.x, y=object.y, z=object.z, endTime=GetGameTimer()+obj.duration, data=obj, creator=creator.charName, points=getVision(object, WARD_RANGE), networkID=DwordToFloat(AddNum(FloatToDword(networkID), 2))})
+			p.pos = 65
+			if p:DecodeF() == 63 then
+				local obj = hiddenObjectByID(id)
+				if obj and not objectExist(object) then
+					table.insert(hiddenObjects.objects, {x=object.x, y=object.y, z=object.z, endTime=GetGameTimer()+obj.duration, data=obj, creator=creator.charName, points=getVision(object, WARD_RANGE), networkID=DwordToFloat(AddNum(FloatToDword(networkID), 2))})
+				end
 			end
 		end
 	elseif p.header == 49 then -- Delete
@@ -329,12 +336,14 @@ function OnDraw()
 		DrawCircle(obj.x, obj.y, obj.z, 100, obj.data.color)
 		
 		--Draw vision
-		if obj.data.objectName:find("Ward") then
-			if myVision.hiddenObjects.useCircles then
-				DrawCircle(obj.x, obj.y, obj.z, WARD_RANGE, obj.data.color)
-			else
-				for k=2, #obj.points do
-					DrawLine3D(obj.points[k-1].x, obj.y, obj.points[k-1].z, obj.points[k].x, obj.y, obj.points[k].z, 1, obj.data.color)
+		if myVision.hiddenObjects.drawVision then
+			if obj.data.objectName:find("Ward") then
+				if myVision.hiddenObjects.useCircles then
+					DrawCircle(obj.x, obj.y, obj.z, WARD_RANGE, obj.data.color)
+				else
+					for k=2, #obj.points do
+						DrawLine3D(obj.points[k-1].x, obj.y, obj.points[k-1].z, obj.points[k].x, obj.y, obj.points[k].z, 1, obj.data.color)
+					end
 				end
 			end
 		end
