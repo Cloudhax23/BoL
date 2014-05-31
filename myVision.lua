@@ -10,7 +10,7 @@
 	-Changed WARD_RANGE from 1450 to 1200
 	-Added packet support for hidden objects
 	
-	145311
+	14532
 	-Fixed issue with draw random pink wards
 ]]
 
@@ -19,7 +19,7 @@ local WARD_RANGE = 1200
 local TRAP_RANGE = 300
 local SPRITE_LOCATION = "myVision\\"
 local AUTO_UPDATE = true
-local VERSION = 145311
+local VERSION = 14532
 --[ END OF CONSTANTS ]--
 
 if AUTO_UPDATE then
