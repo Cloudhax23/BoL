@@ -1,35 +1,52 @@
+--[[
+	Changelog:
+	
+	14530
+	-Fixed issue with downloading sprites and auto-updating
+	
+	14531
+	-Added trap support and support for OnDeleteObj()
+	-Altered minimap offsets for better accuracy
+	-Changed WARD_RANGE from 1450 to 1200
+	-Added packet support for hidden objects
+]]
+
 --[ CONSTANTS ]--
-local WARD_RANGE = 1450
+local WARD_RANGE = 1200
+local TRAP_RANGE = 300
 local SPRITE_LOCATION = "myVision\\"
 local AUTO_UPDATE = true
+local VERSION = 14531
 --[ END OF CONSTANTS ]--
 
 if AUTO_UPDATE then
-	local local_version = 14530
 	local server_version = tonumber(GetWebResult("raw.github.com", "/Jo7j/BoL/master/version/myVision.version"))
-	if server_version > local_version then
+	if server_version > VERSION then
 		PrintChat("Script is outdated. Updating to version: " .. server_version .. "...")
 		DownloadFile("https://raw.github.com/Jo7j/BoL/master/myVision.lua", SCRIPT_PATH .. "myVision.lua", function()
 				PrintChat("Script updated. Please reload (F9).")
 		end)
 	end
-
-	if not DirectoryExist(SPRITE_PATH .. SPRITE_LOCATION) then
-		CreateDirectory(SPRITE_PATH .. SPRITE_LOCATION)
-	end
-
-	local sprites = {"SummonerClairvoyance.png", "SummonerBarrier.png", "SummonerBoost.png", "SummonerDot.png", "SummonerExhaust.png", "SummonerFlash.png", "SummonerHaste.png", "SummonerHeal.png", "SummonerMana.png", "SummonerRevive.png", "SummonerSmite.png", "SummonerTeleport.png", "Minimap_Ward_Green_Enemy.png", "Minimap_Ward_Pink_Enemy.png"}
-	local downloading_sprites = false
-	for _, sprite in pairs(sprites) do
-		if not FileExist(SPRITE_PATH .. SPRITE_LOCATION .. sprite) then
-			downloading_sprites = true
-			DownloadFile("https://raw.github.com/Jo7j/BoL/master/Sprites/" .. sprite, SPRITE_PATH .. SPRITE_LOCATION .. sprite, function() 
-				PrintChat(sprite .. " downloaded.")
-			end)
-		end
-	end
-	if server_version > local_version or downloading_sprites then return end
+	if server_version > VERSION then return end
 end
+
+-- Create myVision directory within Sprites folder if not already existent
+if not DirectoryExist(SPRITE_PATH .. SPRITE_LOCATION) then
+	CreateDirectory(SPRITE_PATH .. SPRITE_LOCATION)
+end
+
+-- Download missing sprites
+local sprites = {"SummonerClairvoyance.png", "SummonerBarrier.png", "SummonerBoost.png", "SummonerDot.png", "SummonerExhaust.png", "SummonerFlash.png", "SummonerHaste.png", "SummonerHeal.png", "SummonerMana.png", "SummonerRevive.png", "SummonerSmite.png", "SummonerTeleport.png", "Minimap_Ward_Green_Enemy.png", "Minimap_Ward_Pink_Enemy.png", "minimapCP_enemyDiamond.png"}
+local downloading_sprites = false
+for _, sprite in pairs(sprites) do
+	if not FileExist(SPRITE_PATH .. SPRITE_LOCATION .. sprite) then
+		downloading_sprites = true
+		DownloadFile("https://raw.github.com/Jo7j/BoL/master/Sprites/" .. sprite, SPRITE_PATH .. SPRITE_LOCATION .. sprite, function() 
+			PrintChat(sprite .. " downloaded.")
+		end)
+	end
+end
+if downloading_sprites then return end
 
 --[ GLOBALS ]--
 local spellMeta = {
@@ -49,23 +66,24 @@ local spellMeta = {
 hiddenObjects = {
 	sprites = {
 		GreenWard = createSprite(SPRITE_LOCATION .. "Minimap_Ward_Green_Enemy.png"), 
-		PinkWard = createSprite(SPRITE_LOCATION .. "Minimap_Ward_Pink_Enemy.png")
+		PinkWard = createSprite(SPRITE_LOCATION .. "Minimap_Ward_Pink_Enemy.png"), 
+		Trap = createSprite(SPRITE_LOCATION .. "minimapCP_enemyDiamond.png")
 	}, 
 	vision = {
-		{name = "Vision Ward", spellName = "VisionWard", duration = math.huge, color = ARGB(255, 255, 0, 255)}, 
-		{name = "Stealth Ward", spellName = "SightWard", duration = 180, color = ARGB(255, 0, 255, 0)}, 
-		{name = "Warding Totem (Trinket)", spellName = "TrinketTotemLvl1", duration = 60, color = ARGB(255, 0, 255, 0)}, 
-		{name = "Warding Totem (Trinket)", spellName = "trinkettotemlvl2", duration = 120, color = ARGB(255, 0, 255, 0)}, 
-		{name = "Greater Stealth Totem (Trinket)", spellName = "TrinketTotemLvl3", duration = 180, color = ARGB(255, 0, 255, 0)}, 
-		{name = "Greater Vision Totem (Trinket)", spellName = "TrinketTotemLvl3B", duration = 180, color = ARGB(255, 0, 255, 0)}, 
-		{name = "Wriggle's Lantern", spellName = "wrigglelantern", duration = 180, color = ARGB(255, 0, 255, 0)}, 
-		{name = "Ghost Ward", spellName = "ItemGhostWard", duration = 180, color = ARGB(255, 0, 255, 0)}, 
+		{name = "Vision Ward", objectName = "VisionWard", spellName = "VisionWard", duration = math.huge, id = 8, color = ARGB(255, 255, 0, 255)}, 
+		{name = "Stealth Ward", objectName = "SightWard", spellName = "SightWard", duration = 180, id = 161, color = ARGB(255, 0, 255, 0)}, 
+		{name = "Warding Totem (Trinket)", objectName = "SightWard", spellName = "TrinketTotemLvl1", duration = 60, id = 56, color = ARGB(255, 0, 255, 0)}, 
+		{name = "Warding Totem (Trinket)", objectName = "SightWard", spellName = "trinkettotemlvl2", duration = 120, id = 56, color = ARGB(255, 0, 255, 0)}, 
+		{name = "Greater Stealth Totem (Trinket)", objectName = "SightWard", spellName = "TrinketTotemLvl3", duration = 180, id = 56, color = ARGB(255, 0, 255, 0)}, 
+		{name = "Greater Vision Totem (Trinket)", objectName = "SightWard", spellName = "TrinketTotemLvl3B", duration = math.huge, id = 137, color = ARGB(255, 255, 0, 255)}, 
+		{name = "Wriggle's Lantern", objectName = "SightWard", spellName = "wrigglelantern", duration = 180, id = 73, color = ARGB(255, 0, 255, 0)}, 
+		{name = "Ghost Ward", objectName = "SightWard", spellName = "ItemGhostWard", duration = 180, id = 229, color = ARGB(255, 0, 255, 0)}, 
 	}, 
 	traps = {
-		{name = "Yordle Snap Trap", spellName = "CaitlynYordleTrap", duration = 240, color = ARGB(255, 255, 0, 0)}, 
-		{name = "Jack In The Box", spellName = "JackInTheBox", duration = 60, color = ARGB(255, 255, 0, 0)}, 
-		{name = "Bushwhack", spellName = "Bushwhack", duration = 240, color = ARGB(255, 255, 0, 0)}, 
-		{name = "Noxious Trap", spellName = "BantamTrap", duration = 600, color = ARGB(255, 255, 0, 0)}, 
+		{name = "Yordle Snap Trap", objectName = "Cupcake Trap", spellName = "CaitlynYordleTrap", duration = 240, id = 62, color = ARGB(255, 255, 0, 0)}, 
+		{name = "Jack In The Box", objectName = "Jack In The Box", spellName = "JackInTheBox", duration = 60, id = 2, color = ARGB(255, 255, 0, 0)}, -- Not sure about ID
+		{name = "Bushwhack", objectName = "Noxious Trap", spellName = "Bushwhack", duration = 240, id = 9, color = ARGB(255, 255, 0, 0)}, -- Not sure about ID
+		{name = "Noxious Trap", objectName = "Noxious Trap", spellName = "BantamTrap", duration = 600, id = 48, color = ARGB(255, 255, 0, 0)}, -- Not sure about ID
 	}, 
 	objects = {}
 }
@@ -74,14 +92,27 @@ local heroData = {}
 local wayPointManager = WayPointManager()
 --[ END OF GLOBALS ]--
 
---[ FUNCTIONS ]--
 function objectExist(object)
 	for _, obj in pairs(hiddenObjects.objects) do
-		if object.name == obj.name and object.x > obj.x+100 and object.x < obj.x-100 and object.z > obj.z+100 and object.z < obj.z-100 then
-			return false
+		if object.x > obj.x-32 and object.x < obj.x+32 and object.z > obj.z-32 and object.z < obj.z+32 then
+			return true
 		end
 	end
-	return true
+	return false
+end
+
+function hiddenObjectByID(id)
+	for _, obj in pairs(hiddenObjects.vision) do
+		if id == obj.id then
+			return obj
+		end
+	end
+	for _, obj in pairs(hiddenObjects.traps) do
+		if id == obj.id then
+			return obj
+		end
+	end
+	return nil
 end
 
 function getVision(viewPos, range)
@@ -108,7 +139,7 @@ function drawWayPoints(object)
 	for k=2, #wayPoints do
 		DrawLine3D(wayPoints[k-1].x, object.y, wayPoints[k-1].y, wayPoints[k].x, object.y, wayPoints[k].y, 1, ARGB(color[1], color[2], color[3], color[4]))
 		if myVision.waypoints.drawOnMinimap and not object.isMe then
-			DrawLine(GetMinimapX(wayPoints[k-1].x), GetMinimapY(wayPoints[k-1].y), GetMinimapX(wayPoints[k].x), GetMinimapY(wayPoints[k].y), 1, ARGB(color[1], color[2], color[3], color[4]))
+			DrawLine(GetMinimapX(wayPoints[k-1].x-128), GetMinimapY(wayPoints[k-1].y+128), GetMinimapX(wayPoints[k].x-128), GetMinimapY(wayPoints[k].y+128), 1, ARGB(color[1], color[2], color[3], color[4]))
 		end
 		if myVision.waypoints.drawETA then
 			local seconds = math.floor(fTime%60)
@@ -181,6 +212,7 @@ function OnLoad()
 	
 	myVision:addSubMenu("Hero Tracker", "heroTracker")
 	myVision.heroTracker:addParam("drawSpells", "Draw Summoner Spells", SCRIPT_PARAM_ONOFF, true)
+	--myVision.heroTracker:addParam("drawAbilites", "Draw Abilities", SCRIPT_PARAM_ONOFF, true)
 	
 	
 	--myVision:addSubMenu("Jungle Timers", "jungleTimers")
@@ -201,30 +233,47 @@ function OnLoad()
 		end
 	end
 	
-	PrintChat("myVision rev. 13530")
+	PrintChat("myVision rev. " .. VERSION)
 end
 
---[[function OnCreateObj(object)
-	if GetDistance(myHero, object) < 150 then
-		PrintChat(object.name)
-	end
-	if object and object.valid then
-		DelayAction(function(object, gtimer)
-			for _, obj in pairs(hiddenObjects.objectsToAdd) do
-				if object.name == obj.name and object.charName == obj.spellName then
-					table.insert(hiddenObjects.objects, {x=object.x, y=object.y, z=object.z, endTime=gtimer+obj.duration, data=obj, points=getVision(object, obj.range)})
-					break
-				end
+function OnRecvPacket(p)
+	if p.header == 180 then -- Create
+		p.pos = 1
+		local creator = objManager:GetObjectByNetworkId(p:DecodeF())
+		if creator.team ~= myHero.team then
+			p.pos = 13
+			local id = p:Decode1()
+			p.pos = 37
+			local networkID = p:DecodeF()
+			p.pos = 53
+			local object = {x = p:DecodeF(), y = p:DecodeF(), z = p:DecodeF()}
+			local obj = hiddenObjectByID(id)
+			if obj and not objectExist(object) then
+				table.insert(hiddenObjects.objects, {x=object.x, y=object.y, z=object.z, endTime=GetGameTimer()+obj.duration, data=obj, creator=creator.charName, points=getVision(object, WARD_RANGE), networkID=DwordToFloat(AddNum(FloatToDword(networkID), 2))})
 			end
-		end, 1, {object, GetGameTimer()})
+		end
+	elseif p.header == 49 then -- Delete
+		p.pos = 1
+		local networkID = p:DecodeF()
+		for i, obj in pairs(hiddenObjects.objects) do
+			if obj.networkID and obj.networkID == networkID then
+				table.remove(hiddenObjects.objects, i)
+			end
+		end
 	end
-end]]
+end
 
 function OnProcessSpell(object, spellProc)
 	if object.type == "obj_AI_Hero" and object.team ~= myHero.team then
 		for _, obj in pairs(hiddenObjects.vision) do
-			if spellProc.name == obj.spellName then
-				table.insert(hiddenObjects.objects, {x=spellProc.endPos.x, y=spellProc.endPos.y, z=spellProc.endPos.z, endTime=GetGameTimer()+obj.duration, data=obj, creator=object.charName, points=getVision(object, WARD_RANGE)})
+			if spellProc.name == obj.spellName and not objectExist(spellProc.endPos) then
+				table.insert(hiddenObjects.objects, {x=spellProc.endPos.x, y=spellProc.endPos.y, z=spellProc.endPos.z, endTime=GetGameTimer()+obj.duration, data=obj, creator=object.charName, points=getVision(spellProc.endPos, WARD_RANGE)})
+				break
+			end
+		end
+		for _, obj in pairs(hiddenObjects.traps) do
+			if spellProc.name == obj.spellName and not objectExist(spellProc.endPos) then
+				table.insert(hiddenObjects.objects, {x=spellProc.endPos.x, y=spellProc.endPos.y, z=spellProc.endPos.z, endTime=GetGameTimer()+obj.duration, data=obj, creator=object.charName, points=getVision(spellProc.endPos, TRAP_RANGE)})
 				break
 			end
 		end
@@ -232,15 +281,9 @@ function OnProcessSpell(object, spellProc)
 end
 
 function OnDeleteObj(object)
-	if object then
-		for _, objectToAdd in pairs(hiddenObjects.vision) do
-			if object.name == objectToAdd.name then
-				for k, obj in pairs(hiddenObjects.objects) do
-					if obj.x == object.x and obj.z == object.z then
-						table.remove(hiddenObjects.objects, k)
-					end
-				end
-			end
+	for i, obj in pairs(hiddenObjects.objects) do
+		if object.name == obj.data.objectName and object.x < obj.x+100 and object.x > obj.x-100 and object.z < obj.z+100 and object.z > obj.z-100 then
+			table.remove(hiddenObjects.objects, i)
 		end
 	end
 end
@@ -249,12 +292,13 @@ function OnDraw()
 	for i=1, heroManager.iCount do
 		local hero = heroManager:getHero(i)
 		
-		-- Draw Summoner Spells
+		-- Log current cooldowns
 		for n=1, 2 do -- This should probably go in OnTick()
 			heroData[i][n].cd = math.floor(hero:GetSpellData(spellData[n]).currentCd)
 			heroData[i][n].maxCd = heroData[i][n].cd > heroData[i][n].maxCd and heroData[i][n].cd or heroData[i][n].maxCd
 		end
 		
+		-- Draw Summoner Spells
 		if myVision.heroTracker.drawSpells and hero.visible and not hero.dead then
 				drawSummonerSpells(hero, i)
 		end
@@ -273,21 +317,25 @@ function OnDraw()
 		
 		-- Draw on map
 		if myVision.hiddenObjects.drawOnMinimap then
-			if obj.data.duration ~= math.huge then
-				hiddenObjects.sprites.GreenWard:Draw(GetMinimapX(obj.x), GetMinimapY(obj.z), 255)
+			if obj.data.objectName:find("Sight") then
+				hiddenObjects.sprites.GreenWard:Draw(GetMinimapX(obj.x-128), GetMinimapY(obj.z+128), 255)
+			elseif obj.data.objectName:find("Vision") then
+				hiddenObjects.sprites.PinkWard:Draw(GetMinimapX(obj.x-128), GetMinimapY(obj.z+128), 255)
 			else
-				hiddenObjects.sprites.PinkWard:Draw(GetMinimapX(obj.x), GetMinimapY(obj.z), 255)
+				hiddenObjects.sprites.Trap:Draw(GetMinimapX(obj.x-128), GetMinimapY(obj.z+128), 255)
 			end
 		end
 		
 		DrawCircle(obj.x, obj.y, obj.z, 100, obj.data.color)
 		
 		--Draw vision
-		if myVision.hiddenObjects.useCircles then
-			DrawCircle(obj.x, obj.y, obj.z, WARD_RANGE, obj.data.color)
-		else
-			for k=2, #obj.points do
-				DrawLine3D(obj.points[k-1].x, obj.y, obj.points[k-1].z, obj.points[k].x, obj.y, obj.points[k].z, 1, obj.data.color)
+		if obj.data.objectName:find("Ward") then
+			if myVision.hiddenObjects.useCircles then
+				DrawCircle(obj.x, obj.y, obj.z, WARD_RANGE, obj.data.color)
+			else
+				for k=2, #obj.points do
+					DrawLine3D(obj.points[k-1].x, obj.y, obj.points[k-1].z, obj.points[k].x, obj.y, obj.points[k].z, 1, obj.data.color)
+				end
 			end
 		end
 
@@ -317,6 +365,9 @@ function OnUnload()
 	end
 	if hiddenObjects.sprites.PinkWard ~= nil then
 		hiddenObjects.sprites.PinkWard:Release()
+	end
+	if hiddenObjects.sprites.Trap ~= nil then
+		hiddenObjects.sprites.Trap:Release()
 	end
 end
 --[ END OF CALLBACKS ]--
