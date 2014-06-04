@@ -12,6 +12,9 @@
 	
 	14532
 	-Fixed issue with draw random pink wards
+	
+	14604
+	-Fixed issue with line 247 ([string "myVision.lua"]:247: attempt to index local 'creator' (a nil value))
 ]]
 
 --[ CONSTANTS ]--
@@ -19,7 +22,7 @@ local WARD_RANGE = 1200
 local TRAP_RANGE = 300
 local SPRITE_LOCATION = "myVision\\"
 local AUTO_UPDATE = true
-local VERSION = 14532
+local VERSION = 14604
 --[ END OF CONSTANTS ]--
 
 if AUTO_UPDATE then
