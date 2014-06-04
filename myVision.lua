@@ -244,7 +244,7 @@ function OnRecvPacket(p)
 	if p.header == 180 then -- Create
 		p.pos = 1
 		local creator = objManager:GetObjectByNetworkId(p:DecodeF())
-		if creator.team ~= myHero.team then
+		if creator and creator.team ~= myHero.team then
 			p.pos = 13
 			local id = p:Decode1()
 			p.pos = 37
