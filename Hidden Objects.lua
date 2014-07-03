@@ -4,8 +4,6 @@
 	Thanks to superman93 for help with finding trap IDs.
 ]]
 
-local SPRITE_LOCATION = "myVision\\"
-
 -- Colors
 local COLOR_GREEN = ARGB(255, 0, 255, 0)
 local COLOR_PINK = ARGB(255, 255, 0, 255)
@@ -29,14 +27,14 @@ local hiddenObjects = {
 	objects = {} -- This table will store all found hidden objects
 }
 
-if FileExist(SPRITE_PATH .. SPRITE_LOCATION .. "Minimap_Ward_Green_Enemy.png") and 
-	FileExist(SPRITE_PATH .. SPRITE_LOCATION .. "Minimap_Ward_Pink_Enemy.png") and
-	FileExist(SPRITE_PATH .. SPRITE_LOCATION .. "minimapCP_enemyDiamond.png")
+if FileExist(SPRITE_PATH .. "Minimap_Ward_Green_Enemy.png") and 
+	FileExist(SPRITE_PATH .. "Minimap_Ward_Pink_Enemy.png") and
+	FileExist(SPRITE_PATH .. "minimapCP_enemyDiamond.png")
 	then
 	hiddenObjects.sprites = { -- Sprite files for minimap
-		GreenWard = createSprite(SPRITE_LOCATION .. "Minimap_Ward_Green_Enemy.png"), 
-		PinkWard = createSprite(SPRITE_LOCATION .. "Minimap_Ward_Pink_Enemy.png"), 
-		Trap = createSprite(SPRITE_LOCATION .. "minimapCP_enemyDiamond.png")
+		GreenWard = createSprite("Minimap_Ward_Green_Enemy.png"), 
+		PinkWard = createSprite("Minimap_Ward_Pink_Enemy.png"), 
+		Trap = createSprite("minimapCP_enemyDiamond.png")
 	}
 	useSprites = true
 end
