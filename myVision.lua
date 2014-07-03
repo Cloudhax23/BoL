@@ -15,6 +15,9 @@
 	
 	14604
 	-Fixed issue with line 247 ([string "myVision.lua"]:247: attempt to index local 'creator' (a nil value))
+	
+	14703
+	- Updated packet headers
 ]]
 
 --[ CONSTANTS ]--
@@ -22,7 +25,7 @@ local WARD_RANGE = 1200
 local TRAP_RANGE = 300
 local SPRITE_LOCATION = "myVision\\"
 local AUTO_UPDATE = true
-local VERSION = 14604
+local VERSION = 14703
 --[ END OF CONSTANTS ]--
 
 if AUTO_UPDATE then
@@ -244,7 +247,7 @@ function OnLoad()
 end
 
 function OnRecvPacket(p)
-	if p.header == 180 then -- Create
+	if p.header == 181 then -- Create
 		p.pos = 1
 		local creator = objManager:GetObjectByNetworkId(p:DecodeF())
 		if creator and creator.team ~= myHero.team then
@@ -262,7 +265,7 @@ function OnRecvPacket(p)
 				end
 			end
 		end
-	elseif p.header == 49 then -- Delete
+	elseif p.header == 50 then -- Delete
 		p.pos = 1
 		local networkID = p:DecodeF()
 		for i, obj in pairs(hiddenObjects.objects) do
