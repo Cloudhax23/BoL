@@ -32,9 +32,8 @@ function OnRecvPacket(p)
 	elseif p.header == 233 then
 		p.pos = 21
 		local campID = p:Decode1()
-		if jungle[campID] ~= nil then
+		if jungle[campID] then
 			jungle[campID].spawnTime = GetGameTimer()-jungle[campID].respawnTime
-			PrintChat(jungle[campID].name .. " has spawned")
 		end
 	end
 end
