@@ -1,6 +1,8 @@
 --[[
 	Hidden Objects
 	
+	If you want to disable for ally objects go to line 48 and remove comments
+	
 	Thanks to superman93 for help with finding trap IDs.
 ]]
 
@@ -27,23 +29,17 @@ local hiddenObjects = {
 	objects = {} -- This table will store all found hidden objects
 }
 
-if FileExist(SPRITE_PATH .. "Minimap_Ward_Green_Enemy.png") and 
-	FileExist(SPRITE_PATH .. "Minimap_Ward_Pink_Enemy.png") and
-	FileExist(SPRITE_PATH .. "minimapCP_enemyDiamond.png")
-	then
-	hiddenObjects.sprites = { -- Sprite files for minimap
-		GreenWard = createSprite("Minimap_Ward_Green_Enemy.png"), 
-		PinkWard = createSprite("Minimap_Ward_Pink_Enemy.png"), 
-		Trap = createSprite("minimapCP_enemyDiamond.png")
-	}
-	useSprites = true
-end
+hiddenObjects.sprites = { -- Sprite files for minimap
+	GreenWard = FileExist(SPRITE_PATH .. "Minimap_Ward_Green_Enemy.png") and createSprite("Minimap_Ward_Green_Enemy.png"), 
+	PinkWard = FileExist(SPRITE_PATH .. "Minimap_Ward_Pink_Enemy.png") and createSprite("Minimap_Ward_Pink_Enemy.png"), 
+	Trap = FileExist(SPRITE_PATH .. "minimapCP_enemyDiamond.png") and createSprite("minimapCP_enemyDiamond.png")
+}
 
 function OnRecvPacket(p)
 	if p.header == 181 then
 		p.pos = 1
 		local creator = objManager:GetObjectByNetworkId(p:DecodeF())
-		if creator --[[and creator.team == TEAM_ENEMY]] then
+		if creator and creator.team == TEAM_ENEMY then
 			p.pos = 12
 			local id = p:Decode4()
 			p.pos = 37
@@ -66,10 +62,21 @@ function OnRecvPacket(p)
 	elseif p.header == 50 then -- Delete
 		p.pos = 1
 		local networkID = p:DecodeF()
-		for i, obj in pairs(hiddenObjects.objects) do
+		for i, obj in ipairs(hiddenObjects.objects) do
 			if obj.networkID and obj.networkID == networkID then
 				table.remove(hiddenObjects.objects, i)
 				break
+			end
+		end
+	end
+end
+
+function OnDeleteObj(object)
+	if object.name:find("Ward") or object.name == "Cupcake Trap" or object.name == "Jack In The Box" or object.name == "Noxious Trap" then
+		for i, obj in ipairs(hiddenObjects.objects) do
+			if GetDistance(object, obj.pos) < 5 then
+				table.remove(hiddenObjects.objects, i)
+				return
 			end
 		end
 	end
@@ -81,19 +88,27 @@ function OnDraw()
 			table.remove(hiddenObjects.objects, i)
 		end
 		
-		if useSprites then
-			if obj.data.type == "green" then
+		if obj.data.type == "green" then
+			if hiddenObjects.sprites.GreenWard then
 				hiddenObjects.sprites.GreenWard:Draw(GetMinimapX(obj.pos.x-128), GetMinimapY(obj.pos.z+128), 255)
-			elseif obj.data.type == "pink" then
+			else
+				DrawRectangle(GetMinimapX(obj.pos.x-128), GetMinimapY(obj.pos.z+128), 5, 5, ARGB(255, 0, 255, 0))
+			end
+		elseif obj.data.type == "pink" then
+			if hiddenObjects.sprites.PinkWard then
 				hiddenObjects.sprites.PinkWard:Draw(GetMinimapX(obj.pos.x-128), GetMinimapY(obj.pos.z+128), 255)
 			else
-				hiddenObjects.sprites.Trap:Draw(GetMinimapX(obj.pos.x-128), GetMinimapY(obj.pos.z+128), 255)
+				DrawRectangle(GetMinimapX(obj.pos.x-128), GetMinimapY(obj.pos.z+128), 5, 5, ARGB(255, 255, 0, 255))
 			end
 		else
-			DrawRectangle(GetMinimapX(obj.pos.x-128), GetMinimapY(obj.pos.z+128), 5, 5, ARGB(255, 255, 0, 0))
+			if hiddenObjects.sprites.Trap then
+				hiddenObjects.sprites.Trap:Draw(GetMinimapX(obj.pos.x-128), GetMinimapY(obj.pos.z+128), 255)
+			else
+				DrawRectangle(GetMinimapX(obj.pos.x-128), GetMinimapY(obj.pos.z+128), 5, 5, ARGB(255, 255, 0, 0))
+			end
 		end
-				
-		DrawCircle(obj.pos.x, obj.pos.y, obj.pos.z, 100, obj.data.color)
+
+		DrawLFC(obj.pos.x, obj.pos.y, obj.pos.z, 70, obj.data.color)
 
 
 		local t = obj.endTime-GetGameTimer()
@@ -109,4 +124,15 @@ function OnDraw()
 			DrawText3D("\n?", obj.pos.x, obj.pos.y, obj.pos.z, 16, ARGB(255, 255, 255, 255), true)
 		end
 	end
+end
+
+function DrawLFC(x, y, z, radius, color)
+    local quality = 2 * math.pi / 10
+    local a = Vector(x + radius * math.cos(0), y, z - radius * math.sin(0))
+    
+    for theta = quality, 2 * math.pi + quality, quality do
+        local b = Vector(x + radius * math.cos(theta), y, z - radius * math.sin(theta))
+        DrawLine3D(a.x, a.y, a.z, b.x, b.y, b.z, 2, color)
+        a = b
+    end
 end
