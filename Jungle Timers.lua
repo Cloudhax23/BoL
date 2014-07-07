@@ -6,6 +6,8 @@
 ]]
 
 local jungle = GetGame().map.index
+local ServerTimer = GetGameTimer()
+AddTickCallback(function() ServerTimer = ServerTimer + 0.01 end)
 
 if jungle == 1 then
 	jungle = {
@@ -37,6 +39,7 @@ elseif jungle == 10 then
 	}
 else
 	PrintChat("Jungle Timers: Map not supported")
+	return
 end
 
 function OnLoad()
@@ -50,13 +53,16 @@ function OnRecvPacket(p)
 	if p.header == 195 then
 		p.pos = 9
 		local campID = p:Decode4()
-		jungle[campID].spawnTime = os.clock()+jungle[campID].respawnTime
+		jungle[campID].spawnTime = ServerTimer+jungle[campID].respawnTime
 	elseif p.header == 233 then
 		p.pos = 21
 		local campID = p:Decode1()
 		if jungle[campID] ~= nil then
-			jungle[campID].spawnTime = os.clock()-jungle[campID].respawnTime
+			jungle[campID].spawnTime = ServerTimer-jungle[campID].respawnTime
 		end
+	elseif p.header == 193 then
+		p.pos = 5
+		ServerTimer = p:DecodeF()
 	end
 end
 
@@ -72,14 +78,14 @@ function OnDraw()
 				p:Encode1(3)
 				RecvPacket(p)
 				
-				jungle[i].spawnTime = os.clock()+jungle[i].respawnTime
+				jungle[i].spawnTime = ServerTimer+jungle[i].respawnTime
 			end
 		end
 	end
 	
 	for i, camp in ipairs(jungle) do
-		if os.clock() < camp.spawnTime then
-			local t = camp.spawnTime-os.clock()
+		if ServerTimer < camp.spawnTime then
+			local t = camp.spawnTime-ServerTimer
 			local m = math.floor(t/60)
 			local s = math.ceil(t%60)
 			s = (s<10 and "0"..s) or s
