@@ -7,8 +7,6 @@
 
 local jungle = GetGame().map.index
 
-PrintChat(""..jungle)
-
 if jungle == 1 then
 	jungle = {
 		{name = "Blue", spawnTime = 115, respawnTime = 5*60, position = {x = 3608, y = 7800}}, -- Bottom Blue
