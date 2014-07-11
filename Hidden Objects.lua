@@ -1,8 +1,6 @@
 --[[
 	Hidden Objects
 	
-	If you want to disable for ally objects go to line 48 and remove comments
-	
 	Thanks to superman93 for help with finding trap IDs.
 ]]
 
