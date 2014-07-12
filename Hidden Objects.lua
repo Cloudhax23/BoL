@@ -11,19 +11,19 @@ local COLOR_RED = ARGB(255, 255, 0, 0)
 
 local hiddenObjects = {
 	meta = {
-		{duration = 25000, id = 6424612, color = COLOR_PINK, type = "pink"}, -- Vision Ward
-		{duration = 180, id = 234594676, color = COLOR_GREEN, type = "green"}, -- Stealth Ward
-		{duration = 60, id = 263796881, color = COLOR_GREEN, type = "green"}, -- Warding Totem (Trinket)
-		{duration = 120, id = 263796882, color = COLOR_GREEN, type = "green"}, -- Warding Totem (Trinket) (Lvl.9)
-		{duration = 180, id = 263796882, color = COLOR_GREEN, type = "green"}, -- Greater Stealth Totem (Trinket)
-		{duration = 25000, id = 194218338, color = COLOR_PINK, type = "pink"}, -- Greater Vision Totem (Trinket)
-		{duration = 180, id = 177751558, color = COLOR_GREEN, type = "green"}, -- Wriggle's Lantern
-		{duration = 180, id = 135609454, color = COLOR_GREEN, type = "green"}, -- Quill Coat
-		{duration = 180, id = 101180708, color = COLOR_GREEN, type = "green"}, -- Ghost Ward
-		{duration = 240, id = 176176816, color = COLOR_RED, type = "trap"}, -- Yordle Snap Trap
-		{duration = 60, id = 44637032, color = COLOR_RED, type = "trap"}, -- Jack In The Box
-		{duration = 240, id = 167611995, color = COLOR_RED, type = "trap"}, -- Bushwhack
-		{duration = 600, id = 176304336, color = COLOR_RED, type = "trap"}, -- Noxious Trap
+		{duration = 25000, id = 6424612, objectName = "VisionWard", color = COLOR_PINK, type = "pink"}, -- Vision Ward
+		{duration = 180, id = 234594676, objectName = "SightWard", color = COLOR_GREEN, type = "green"}, -- Stealth Ward
+		{duration = 60, id = 263796881, objectName = "Global_Trinket_Yellow.troy", color = COLOR_GREEN, type = "green"}, -- Warding Totem (Trinket)
+		{duration = 120, id = 263796882, objectName = "SightWard", color = COLOR_GREEN, type = "green"}, -- Warding Totem (Trinket) (Lvl.9)
+		{duration = 180, id = 263796882, objectName = "SightWard", color = COLOR_GREEN, type = "green"}, -- Greater Stealth Totem (Trinket)
+		{duration = 25000, id = 194218338, objectName = "VisionWard", color = COLOR_PINK, type = "pink"}, -- Greater Vision Totem (Trinket)
+		{duration = 180, id = 177751558, objectName = "SightWard", color = COLOR_GREEN, type = "green"}, -- Wriggle's Lantern
+		{duration = 180, id = 135609454, objectName = "SightWard", color = COLOR_GREEN, type = "green"}, -- Quill Coat
+		{duration = 180, id = 101180708, objectName = "VisionWard", color = COLOR_GREEN, type = "green"}, -- Ghost Ward
+		{duration = 240, id = 176176816, objectName = "", color = COLOR_RED, type = "trap"}, -- Yordle Snap Trap
+		{duration = 60, id = 44637032, objectName = "", color = COLOR_RED, type = "trap"}, -- Jack In The Box
+		{duration = 240, id = 167611995, objectName = "", color = COLOR_RED, type = "trap"}, -- Bushwhack
+		{duration = 600, id = 176304336, objectName = "", color = COLOR_RED, type = "trap"}, -- Noxious Trap
 	}, 
 	objects = {}
 }
@@ -38,7 +38,7 @@ function OnLoad()
 	Config = scriptConfig("Hidden Objects", "hiddenObjects")
 	Config:addParam("drawAllyWards", "Draw ally wards", SCRIPT_PARAM_ONOFF, true)
 	Config:addParam("drawMinimap", "Draw on minimap", SCRIPT_PARAM_ONOFF, true)
-	Config:addParam("useFOW", "Disable FOW on ward radius", SCRIPT_PARAM_ONOFF, true)
+	Config:addParam("useFOW", "Disable FOW on ward radius", SCRIPT_PARAM_ONOFF, false)
 	Config:addParam("useLFC", "Use lag-free circles", SCRIPT_PARAM_ONOFF, true)
 end
 
@@ -63,10 +63,34 @@ function OnRecvPacket(p)
 			end
 			
 			if object then
-				table.insert(hiddenObjects.objects, {pos=position, endTime=GetGameTimer()+object.duration, data=object, creator=creator, networkID=DwordToFloat(AddNum(FloatToDword(networkID), 2))})
+				networkID = DwordToFloat(AddNum(FloatToDword(networkID), 2))
+				table.insert(hiddenObjects.objects, {pos=position, endTime=GetGameTimer()+object.duration, data=object, creator=creator, networkID=networkID})
+				
+				DelayAction(function()
+					for _, obj in pairs(hiddenObjects.objects) do
+						if obj.networkID == networkID then
+							local object = objManager:GetObjectByNetworkId(networkID)
+							if object and object.valid then
+								obj.pos = Vector(object.x, object.y, object.z)
+							end
+							return
+						end
+					end
+				end, 1)
+				
 				if Config.useFOW and object.type ~= "trap" then
 					DisableFOW(myHero.team, AddNum(FloatToDword(networkID), -2), position, object.duration)
 				end
+			end
+		end
+	elseif p.header == 178 then
+		p.pos = 1
+		local networkID = p:DecodeF()
+		local object = objManager:GetObjectByNetworkId(networkID)
+		for _, obj in pairs(hiddenObjects.objects) do
+			if obj.networkID == networkID then
+				obj.pos = Vector(object.x, object.y, object.z)
+				return
 			end
 		end
 	elseif p.header == 50 then
@@ -97,7 +121,7 @@ function OnDraw()
 		if (Config.drawAllyWards and obj.creator.team ~= TEAM_ENEMY or obj.creator.team == TEAM_ENEMY) then
 			if GetGameTimer() > obj.endTime then
 				table.remove(hiddenObjects.objects, i)
-			end
+			end			
 			
 			if Config.drawMinimap then
 				if obj.data.type == "green" then
@@ -122,13 +146,13 @@ function OnDraw()
 			end
 
 			if Config.useLFC then
-				DrawLFC(obj.pos.x, obj.pos.y, obj.pos.z, 75, obj.data.color)
+				DrawCircle3D(obj.pos.x, obj.pos.y, obj.pos.z, 75, 2, obj.data.color, 10)
 			else
 				DrawCircle(obj.pos.x, obj.pos.y, obj.pos.z, 100, obj.data.color)
 			end
 
 			local t = obj.endTime-GetGameTimer()
-			if obj.duration ~= 25000 then
+			if t < 10000 then
 				local m = math.floor(t/60)
 				local s = math.ceil(t%60)
 				s = (s<10 and "0"..s) or s
@@ -169,15 +193,4 @@ function DisableFOW(team, networkID, pos, duration)
 		p:Encode4(0x44A8C000)
 	end
 	RecvPacket(p)
-end
-
-function DrawLFC(x, y, z, radius, color)
-    local quality = 2 * math.pi / 10
-    local a = Vector(x + radius * math.cos(0), y, z - radius * math.sin(0))
-    
-    for theta = quality, 2 * math.pi + quality, quality do
-        local b = Vector(x + radius * math.cos(theta), y, z - radius * math.sin(theta))
-        DrawLine3D(a.x, a.y, a.z, b.x, b.y, b.z, 2, color)
-        a = b
-    end
 end
