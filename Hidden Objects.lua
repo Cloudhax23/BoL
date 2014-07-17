@@ -87,10 +87,12 @@ function OnRecvPacket(p)
 		p.pos = 1
 		local networkID = p:DecodeF()
 		local object = objManager:GetObjectByNetworkId(networkID)
-		for _, obj in pairs(hiddenObjects.objects) do
-			if obj.networkID == networkID then
-				obj.pos = Vector(object.x, object.y, object.z)
-				return
+		if object then
+			for _, obj in pairs(hiddenObjects.objects) do
+				if obj.networkID == networkID then
+					obj.pos = Vector(object.x, object.y, object.z)
+					return
+				end
 			end
 		end
 	elseif p.header == 50 then
