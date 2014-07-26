@@ -1,388 +1,399 @@
+local mapIndex = GetGame().map.index
+
+function OnLoad()
+	_G.enemyHeroes = GetEnemyHeroes()
+
+	Config = scriptConfig("myVision", "myVision")
+	
+	Config:addSubMenu("Way Points", "wayPoints")
+	Config.wayPoints:addParam("drawWorld", "Draw 3D", SCRIPT_PARAM_ONOFF, true)
+	Config.wayPoints:addParam("drawMinimap", "Draw 2D", SCRIPT_PARAM_ONOFF, true)
+	Config.wayPoints:addParam("drawETA", "Draw ETA", SCRIPT_PARAM_ONOFF, true)
+	
+	Config.wayPoints:addSubMenu("Allies", "allies")
+	Config.wayPoints.allies:addParam("enabled", "Enabled", SCRIPT_PARAM_ONOFF, true)
+	Config.wayPoints.allies:addParam("color", "Color", SCRIPT_PARAM_COLOR, {255, 0, 255, 255})
+	Config.wayPoints.allies:addParam(myHero.charName, myHero.charName, SCRIPT_PARAM_ONOFF, true)
+	for _, ally in pairs(GetAllyHeroes()) do
+		Config.wayPoints.allies:addParam(ally.charName, ally.charName, SCRIPT_PARAM_ONOFF, true)
+	end
+	
+	Config.wayPoints:addSubMenu("Enemies", "axis")
+	Config.wayPoints.axis:addParam("enabled", "Enabled", SCRIPT_PARAM_ONOFF, true)
+	Config.wayPoints.axis:addParam("color", "Color", SCRIPT_PARAM_COLOR, {255, 255, 0, 0})
+	for _, enemy in pairs(enemyHeroes) do
+		Config.wayPoints.axis:addParam(enemy.charName, enemy.charName, SCRIPT_PARAM_ONOFF, true)
+	end
+	
+	if mapIndex == 1 then
+		Config:addSubMenu("Hidden Objects", "hiddenObjects")
+		Config.hiddenObjects:addParam("drawAlly", "Draw ally wards", SCRIPT_PARAM_ONOFF, true)
+		Config.hiddenObjects:addParam("drawAxis", "Draw enemy wards", SCRIPT_PARAM_ONOFF, true)
+		Config.hiddenObjects:addParam("drawMinimap", "Draw on minimap", SCRIPT_PARAM_ONOFF, true)
+		Config.hiddenObjects:addParam("useLFC", "Use lag-free circles", SCRIPT_PARAM_ONOFF, true)
+	end
+	
+	Config:addSubMenu("Minimap Timers", "minimapTimers")
+	Config.minimapTimers:addParam("hotkey", "Clear camp hotkey" , SCRIPT_PARAM_ONKEYDOWN, false, GetKey('K'))
+	Config.minimapTimers:addParam("textSize", "Minimap text size", SCRIPT_PARAM_SLICE, 14, 10, 20, 0)
+	Config.minimapTimers:addParam("textColor", "Minimap text color", SCRIPT_PARAM_COLOR, {255, 255, 255, 255})
+	Config.minimapTimers:addParam("sendChatKey", "Send to chat on click hotkey", SCRIPT_PARAM_ONKEYDOWN, false, 0x10)
+	
+	local oPrintChat = PrintChat
+	PrintChat = function(input)
+		oPrintChat("<font color=\"#AAAAAA\"><b>myVision</b>: </font><font color=\"#FFFFFF\">" .. input .. "</font>")
+	end
+	PrintError = function(input)
+		oPrintChat("<font color=\"#AAAAAA\"><b>myVision</b>: </font><font color=\"#FF7777\">" .. input .. "</font>")
+	end
+	
+	wayPoints()
+	minimapTimers()
+	if mapIndex == 1 then
+		hiddenObjects()
+	end
+	if mapIndex ~= 12 then
+		recallTracker()
+	end
+	
+	PrintChat("<font color=\"#77FF77\">Loaded</font>")
+end
+
 --[[
-	Changelog:
-	
-	14530
-	-Fixed issue with downloading sprites and auto-updating
-	
-	14531
-	-Added trap support and support for OnDeleteObj()
-	-Altered minimap offsets for better accuracy
-	-Changed WARD_RANGE from 1450 to 1200
-	-Added packet support for hidden objects
-	
-	14532
-	-Fixed issue with draw random pink wards
-	
-	14604
-	-Fixed issue with line 247 ([string "myVision.lua"]:247: attempt to index local 'creator' (a nil value))
-	
-	14703
-	- Updated packet headers
+	Way Points
 ]]
 
---[ CONSTANTS ]--
-local WARD_RANGE = 1200
-local TRAP_RANGE = 300
-local SPRITE_LOCATION = "myVision\\"
-local AUTO_UPDATE = true
-local VERSION = 14703
---[ END OF CONSTANTS ]--
+class "wayPoints"
 
-if AUTO_UPDATE then
-	local server_version = tonumber(GetWebResult("raw.github.com", "/Jo7j/BoL/master/version/myVision.version"))
-	if server_version > VERSION then
-		PrintChat("Script is outdated. Updating to version: " .. server_version .. "...")
-		DownloadFile("https://raw.github.com/Jo7j/BoL/master/myVision.lua", SCRIPT_PATH .. "myVision.lua", function()
-				PrintChat("Script updated. Please reload (F9).")
-		end)
-	end
-	if server_version > VERSION then return end
+function wayPoints:__init()
+	self.wayPointManager = WayPointManager()
+
+	AddDrawCallback(function() self:OnDraw() end)
 end
 
--- Create myVision directory within Sprites folder if not already existent
-if not DirectoryExist(SPRITE_PATH .. SPRITE_LOCATION) then
-	CreateDirectory(SPRITE_PATH .. SPRITE_LOCATION)
-end
-
--- Download missing sprites
-local sprites = {"SummonerClairvoyance.png", "SummonerBarrier.png", "SummonerBoost.png", "SummonerDot.png", "SummonerExhaust.png", "SummonerFlash.png", "SummonerHaste.png", "SummonerHeal.png", "SummonerMana.png", "SummonerRevive.png", "SummonerSmite.png", "SummonerTeleport.png", "Minimap_Ward_Green_Enemy.png", "Minimap_Ward_Pink_Enemy.png", "minimapCP_enemyDiamond.png"}
-local downloading_sprites = false
-for _, sprite in pairs(sprites) do
-	if not FileExist(SPRITE_PATH .. SPRITE_LOCATION .. sprite) then
-		downloading_sprites = true
-		DownloadFile("https://raw.github.com/Jo7j/BoL/master/Sprites/" .. sprite, SPRITE_PATH .. SPRITE_LOCATION .. sprite, function() 
-			PrintChat(sprite .. " downloaded.")
-		end)
-	end
-end
-if downloading_sprites then return end
-
---[ GLOBALS ]--
-local spellMeta = {
-	{name="SummonerClairvoyance", sprite=createSprite(SPRITE_LOCATION .. "SummonerClairvoyance.png")}, 
-	{name="SummonerBarrier", sprite=createSprite(SPRITE_LOCATION .. "SummonerBarrier.png")}, 
-	{name="SummonerBoost", sprite=createSprite(SPRITE_LOCATION .. "SummonerBoost.png")}, 
-	{name="SummonerDot", sprite=createSprite(SPRITE_LOCATION .. "SummonerDot.png")}, 
-	{name="SummonerExhaust", sprite=createSprite(SPRITE_LOCATION .. "SummonerExhaust.png")}, 
-	{name="SummonerFlash", sprite=createSprite(SPRITE_LOCATION .. "SummonerFlash.png")}, 
-	{name="SummonerHaste", sprite=createSprite(SPRITE_LOCATION .. "SummonerHaste.png")}, 
-	{name="SummonerHeal", sprite=createSprite(SPRITE_LOCATION .. "SummonerHeal.png")}, 
-	{name="SummonerMana", sprite=createSprite(SPRITE_LOCATION .. "SummonerMana.png")}, 
-	{name="SummonerRevive", sprite=createSprite(SPRITE_LOCATION .. "SummonerRevive.png")}, 
-	{name="SummonerSmite", sprite=createSprite(SPRITE_LOCATION .. "SummonerSmite.png")}, 
-	{name="SummonerTeleport", sprite=createSprite(SPRITE_LOCATION .. "SummonerTeleport.png")}, 
-}
-hiddenObjects = {
-	sprites = {
-		GreenWard = createSprite(SPRITE_LOCATION .. "Minimap_Ward_Green_Enemy.png"), 
-		PinkWard = createSprite(SPRITE_LOCATION .. "Minimap_Ward_Pink_Enemy.png"), 
-		Trap = createSprite(SPRITE_LOCATION .. "minimapCP_enemyDiamond.png")
-	}, 
-	vision = {
-		{name = "Vision Ward", objectName = "VisionWard", spellName = "VisionWard", duration = math.huge, id = 8, color = ARGB(255, 255, 0, 255)}, 
-		{name = "Stealth Ward", objectName = "SightWard", spellName = "SightWard", duration = 180, id = 161, color = ARGB(255, 0, 255, 0)}, 
-		{name = "Warding Totem (Trinket)", objectName = "SightWard", spellName = "TrinketTotemLvl1", duration = 60, id = 56, color = ARGB(255, 0, 255, 0)}, 
-		{name = "Warding Totem (Trinket)", objectName = "SightWard", spellName = "trinkettotemlvl2", duration = 120, id = 56, color = ARGB(255, 0, 255, 0)}, 
-		{name = "Greater Stealth Totem (Trinket)", objectName = "SightWard", spellName = "TrinketTotemLvl3", duration = 180, id = 56, color = ARGB(255, 0, 255, 0)}, 
-		{name = "Greater Vision Totem (Trinket)", objectName = "SightWard", spellName = "TrinketTotemLvl3B", duration = math.huge, id = 137, color = ARGB(255, 255, 0, 255)}, 
-		{name = "Wriggle's Lantern", objectName = "SightWard", spellName = "wrigglelantern", duration = 180, id = 73, color = ARGB(255, 0, 255, 0)}, 
-		{name = "Ghost Ward", objectName = "SightWard", spellName = "ItemGhostWard", duration = 180, id = 229, color = ARGB(255, 0, 255, 0)}, 
-	}, 
-	traps = {
-		{name = "Yordle Snap Trap", objectName = "Cupcake Trap", spellName = "CaitlynYordleTrap", duration = 240, id = 62, color = ARGB(255, 255, 0, 0)}, 
-		{name = "Jack In The Box", objectName = "Jack In The Box", spellName = "JackInTheBox", duration = 60, id = 2, color = ARGB(255, 255, 0, 0)}, -- Not sure about ID
-		{name = "Bushwhack", objectName = "Noxious Trap", spellName = "Bushwhack", duration = 240, id = 9, color = ARGB(255, 255, 0, 0)}, -- Not sure about ID
-		{name = "Noxious Trap", objectName = "Noxious Trap", spellName = "BantamTrap", duration = 600, id = 48, color = ARGB(255, 255, 0, 0)}, -- Not sure about ID
-	}, 
-	objects = {}
-}
-local spellData = {SUMMONER_1, SUMMONER_2}
-local heroData = {}
-local wayPointManager = WayPointManager()
---[ END OF GLOBALS ]--
-
-function objectExist(object)
-	for _, obj in pairs(hiddenObjects.objects) do
-		if object.x > obj.x-32 and object.x < obj.x+32 and object.z > obj.z-32 and object.z < obj.z+32 then
-			return true
-		end
-	end
-	return false
-end
-
-function hiddenObjectByID(id)
-	for _, obj in pairs(hiddenObjects.vision) do
-		if id == obj.id then
-			return obj
-		end
-	end
-	for _, obj in pairs(hiddenObjects.traps) do
-		if id == obj.id then
-			return obj
-		end
-	end
-	return nil
-end
-
-function getVision(viewPos, range)
-	local points = {}
-	local quality = 2*math.pi/25
-	for theta=0, 2*math.pi+quality, quality do
-		local point = D3DXVECTOR3(viewPos.x+range*math.cos(theta), viewPos.y, viewPos.z-range*math.sin(theta))
-		for k=1, range, 25 do
-			local pos = D3DXVECTOR3(viewPos.x+k*math.cos(theta), viewPos.y, viewPos.z-k*math.sin(theta))
-			if IsWall(pos) then
-				point = pos
-				break
-			end
-		end
-		points[#points+1] = point
-	end
-	return points
-end
-
-function drawWayPoints(object)
-	local wayPoints, fTime = wayPointManager:GetSimulatedWayPoints(object)
-	local points = {}
-	local color = object.team == myHero.team and myVision.waypoints.allies.color or myVision.waypoints.axis.color
-	for k=2, #wayPoints do
-		DrawLine3D(wayPoints[k-1].x, object.y, wayPoints[k-1].y, wayPoints[k].x, object.y, wayPoints[k].y, 1, ARGB(color[1], color[2], color[3], color[4]))
-		if myVision.waypoints.drawOnMinimap and not object.isMe then
-			DrawLine(GetMinimapX(wayPoints[k-1].x-128), GetMinimapY(wayPoints[k-1].y+128), GetMinimapX(wayPoints[k].x-128), GetMinimapY(wayPoints[k].y+128), 1, ARGB(color[1], color[2], color[3], color[4]))
-		end
-		if myVision.waypoints.drawETA then
-			local seconds = math.floor(fTime%60)
-			DrawText3D(math.floor(fTime/60)..":".. (seconds > 9 and seconds or "0"..seconds), wayPoints[#wayPoints].x, object.y, wayPoints[#wayPoints].y, 16, ARGB(color[1], color[2], color[3], color[4]))
-		end
-	end
-end
-
-function GetHPBarPos(enemy)
-	enemy.barData = {PercentageOffset = {x = -0.05, y = 0}}--GetEnemyBarData()
-	local barPos = GetUnitHPBarPos(enemy)
-	local barPosOffset = GetUnitHPBarOffset(enemy)
-	local barOffset = { x = enemy.barData.PercentageOffset.x, y = enemy.barData.PercentageOffset.y }
-	local barPosPercentageOffset = { x = enemy.barData.PercentageOffset.x, y = enemy.barData.PercentageOffset.y }
-	local BarPosOffsetX = 171
-	local BarPosOffsetY = 46
-	local CorrectionY = 39
-	local StartHpPos = 31
-
-	barPos.x = math.floor(barPos.x + (barPosOffset.x - 0.5 + barPosPercentageOffset.x) * BarPosOffsetX + StartHpPos)
-	barPos.y = math.floor(barPos.y + (barPosOffset.y - 0.5 + barPosPercentageOffset.y) * BarPosOffsetY + CorrectionY)
-
-	local StartPos = Vector(barPos.x , barPos.y, 0)
-	local EndPos = Vector(barPos.x + 108 , barPos.y , 0)
-	return Vector(StartPos.x, StartPos.y, 0), Vector(EndPos.x, EndPos.y, 0)
-end
-
-function drawSummonerSpells(hero, id)
-	local pos = GetHPBarPos(hero)
-	pos.x = pos.x+128
-	
-	for n=1, 2 do
-		if heroData[id][n].cd == nil or heroData[id][n].cd <= 0 then
-			spellMeta[heroData[id][n].id].sprite:Draw(pos.x, pos.y-23+((n-1)*14), 255)
-		else
-			spellMeta[heroData[id][n].id].sprite:Draw(pos.x, pos.y-23+((n-1)*14), 128)
-			local cx = pos.x+7
-			local cy = pos.y-16+((n-1)*14)
-			local angle = math.rad(-90+((heroData[id][n].maxCd-heroData[id][n].cd)/heroData[id][n].maxCd)*360)
-			local x = cx + math.cos(angle) * 7
-			local y = cy + math.sin(angle) * 7
-			DrawLine(cx, cy, x, y, 1, ARGB(255, 255, 255, 255))
-		end
-	end
-end
---[ END OF FUNCTIONS ]--
-
---[ CALLBACKS ]--
-function OnLoad()
-	myVision = scriptConfig("myVision", "myVision")
-	
-	myVision:addSubMenu("Waypoints", "waypoints")
-	myVision.waypoints:addParam("drawOnMinimap", "Draw On Minimap", SCRIPT_PARAM_ONOFF, true)
-	myVision.waypoints:addParam("drawETA", "Draw ETA", SCRIPT_PARAM_ONOFF, true)
-	
-	myVision.waypoints:addSubMenu("Allies", "allies")
-	myVision.waypoints.allies:addParam("enabled", "Enabled", SCRIPT_PARAM_ONOFF, true)
-	myVision.waypoints.allies:addParam("color", "Color", SCRIPT_PARAM_COLOR, {255, 0, 255, 0})
-	
-	myVision.waypoints:addSubMenu("Enemies", "axis")
-	myVision.waypoints.axis:addParam("enabled", "Enabled", SCRIPT_PARAM_ONOFF, true)
-	myVision.waypoints.axis:addParam("color", "Color", SCRIPT_PARAM_COLOR, {255, 255, 0, 0})
-	
-	
-	myVision:addSubMenu("Hidden Objects", "hiddenObjects")
-	myVision.hiddenObjects:addParam("drawOnMinimap", "Draw On Minimap", SCRIPT_PARAM_ONOFF, true)
-	myVision.hiddenObjects:addParam("drawCreator", "Draw Creator", SCRIPT_PARAM_ONOFF, true)
-	myVision.hiddenObjects:addParam("drawVision", "Draw Vision", SCRIPT_PARAM_ONOFF, false)
-	myVision.hiddenObjects:addParam("useCircles", "Use Circles", SCRIPT_PARAM_ONOFF, false)
-	
-	
-	myVision:addSubMenu("Hero Tracker", "heroTracker")
-	myVision.heroTracker:addParam("drawSpells", "Draw Summoner Spells", SCRIPT_PARAM_ONOFF, true)
-	--myVision.heroTracker:addParam("drawAbilites", "Draw Abilities", SCRIPT_PARAM_ONOFF, true)
-	
-	
-	--myVision:addSubMenu("Jungle Timers", "jungleTimers")
-	
-	for i=1, heroManager.iCount, 1 do
+function wayPoints:OnDraw()
+	for i=1, heroManager.iCount do
 		local hero = heroManager:getHero(i)
-		
-		heroData[i] = {}
-		for n=1, 2 do
-			heroData[i][n] = {id=nil, cd=0, maxCd=0}
-
-			for k, spell in ipairs(spellMeta) do
-				local tmpSpell = hero:GetSpellData(spellData[n]).name
-				if tmpSpell:find(spell.name) then
-					heroData[i][n].id = k
+		if (Config.wayPoints.allies.enabled and hero.team ~= TEAM_ENEMY and Config.wayPoints.allies[hero.charName]) or (Config.wayPoints.axis.enabled and hero.team == TEAM_ENEMY and Config.wayPoints.axis[hero.charName]) then
+			local wayPoints, fTime = self.wayPointManager:GetSimulatedWayPoints(hero)
+			if GetDistance(hero, wayPoints[#wayPoints]) > hero.boundingRadius then
+				local points = {}
+				local color = hero.team == TEAM_ENEMY and Config.wayPoints.axis.color or Config.wayPoints.allies.color
+				
+				for k=2, #wayPoints do
+					if Config.wayPoints.drawWorld then
+						DrawLine3D(wayPoints[k-1].x, hero.y, wayPoints[k-1].y, wayPoints[k].x, hero.y, wayPoints[k].y, 1, ARGB(color[1], color[2], color[3], color[4]))
+					end
+					
+					if Config.wayPoints.drawMinimap and not hero.isMe then
+						DrawLine(GetMinimapX(wayPoints[k-1].x-128), GetMinimapY(wayPoints[k-1].y+128), GetMinimapX(wayPoints[k].x-128), GetMinimapY(wayPoints[k].y+128), 1, ARGB(color[1], color[2], color[3], color[4]))
+					end
+				end
+				
+				if Config.wayPoints.drawETA then
+					local seconds = math.round(fTime%60)
+					DrawText3D(math.floor(fTime/60)..":".. (seconds > 9 and seconds or "0"..seconds), wayPoints[#wayPoints].x, hero.y, wayPoints[#wayPoints].y, 16, ARGB(color[1], color[2], color[3], color[4]))
 				end
 			end
 		end
 	end
-	
-	PrintChat("myVision rev. " .. VERSION)
 end
 
-function OnRecvPacket(p)
-	if p.header == 181 then -- Create
+--[[
+	Hidden Objects *Traps have been removed temporarily due to bugs*
+]]
+
+class "hiddenObjects"
+
+function hiddenObjects:__init()
+	self.hiddenObjects = {
+		meta = {
+			{duration = 25000, id = 6424612, name = "VisionWard", charName = "VisionWard", color = ARGB(255, 255, 0, 255), type = "pink"}, -- Vision Ward
+			{duration = 180, id = 234594676, name = "SightWard", charName = "SightWard", color = ARGB(255, 0, 255, 0), type = "green"}, -- Stealth Ward
+			{duration = 60, id = 263796881, name = "SightWard", charName = "YellowTrinket", color = ARGB(255, 0, 255, 0), type = "green"}, -- Warding Totem (Trinket)
+			{duration = 120, id = 263796882, name = "SightWard", charName = "YellowTrinketUpgrade", color = ARGB(255, 0, 255, 0), type = "green"}, -- Warding Totem (Trinket) (Lvl.9)
+			{duration = 180, id = 263796882, name = "SightWard", charName = "SightWard", color = ARGB(255, 0, 255, 0), type = "green"}, -- Greater Stealth Totem (Trinket)
+			{duration = 25000, id = 194218338, name = "VisionWard", charName = "VisionWard", color = ARGB(255, 255, 0, 255), type = "pink"}, -- Greater Vision Totem (Trinket)
+			{duration = 180, id = 177751558, name = "SightWard", charName = "SightWard", color = ARGB(255, 0, 255, 0), type = "green"}, -- Wriggle's Lantern
+			{duration = 180, id = 135609454, name = "SightWard", charName = "SightWard", color = ARGB(255, 0, 255, 0), type = "green"}, -- Quill Coat
+			{duration = 180, id = 101180708, name = "VisionWard", charName = "SightWard", color = ARGB(255, 0, 255, 0), type = "green"}, -- Ghost Ward
+		}, 
+		sprites = {
+			GreenWard = FileExist(SPRITE_PATH .. "myVision\\minimap\\Minimap_Ward_Green_Enemy.tga") and createSprite("myVision\\minimap\\Minimap_Ward_Green_Enemy.tga"), 
+			PinkWard = FileExist(SPRITE_PATH .. "myVision\\minimap\\Minimap_Ward_Pink_Enemy.tga") and createSprite("myVision\\minimap\\Minimap_Ward_Pink_Enemy.tga"), 
+		}, 
+		objects = {}
+	}
+	
+	AddRecvPacketCallback(function(p) self:OnRecvPacket(p) end)
+	AddCreateObjCallback(function(object) self:OnCreateObj(object) end)
+	AddDeleteObjCallback(function(object) self:OnDeleteObj(object) end)
+	AddDrawCallback(function() self:OnDraw() end)
+	
+	if self.hiddenObjects.sprites.GreenWard then
+		AddUnloadCallback(function()
+			if self.hiddenObjects.sprites.GreenWard then
+				self.hiddenObjects.sprites.GreenWard:Release()
+			end
+		end)
+	end
+	if self.hiddenObjects.sprites.PinkWard then
+		AddUnloadCallback(function()
+			if self.hiddenObjects.sprites.PinkWard then
+				self.hiddenObjects.sprites.PinkWard:Release()
+			end
+		end)
+	end
+end
+
+function hiddenObjects:OnRecvPacket(p)
+	if p.header == 181 then
 		p.pos = 1
-		local creator = objManager:GetObjectByNetworkId(p:DecodeF())
-		if creator and creator.team ~= myHero.team then
-			p.pos = 13
-			local id = p:Decode1()
+		local caster = objManager:GetObjectByNetworkId(p:DecodeF())
+		if caster then
+			p.pos = 12
+			local id = p:Decode4()
 			p.pos = 37
 			local networkID = p:DecodeF()
 			p.pos = 53
-			local object = {x = p:DecodeF(), y = p:DecodeF(), z = p:DecodeF()}
-			p.pos = 65
-			if p:DecodeF() == 63 then
-				local obj = hiddenObjectByID(id)
-				if obj and not objectExist(object) then
-					table.insert(hiddenObjects.objects, {x=object.x, y=object.y, z=object.z, endTime=GetGameTimer()+obj.duration, data=obj, creator=creator.charName, points=getVision(object, WARD_RANGE), networkID=DwordToFloat(AddNum(FloatToDword(networkID), 2))})
+			local position = {x = p:DecodeF(), y = p:DecodeF(), z = p:DecodeF()}
+
+			local object
+			for _, obj in pairs(self.hiddenObjects.meta) do
+				if id == obj.id then
+					object = obj
+					break
 				end
 			end
+			
+			if object then
+				networkID = DwordToFloat(AddNum(FloatToDword(networkID), 2))
+				table.insert(self.hiddenObjects.objects, {pos=position, endTime=GetGameTimer()+object.duration, data=object, creator=caster, networkID=networkID})
+			end
 		end
-	elseif p.header == 50 then -- Delete
+	elseif p.header == 7 then
+		p.pos = 5
+		local creator = objManager:GetObjectByNetworkId(p:DecodeF())
+		if creator and creator.team == TEAM_ENEMY then
+			self.recentCreator = creator
+		end
+	elseif p.header == 50 then
 		p.pos = 1
 		local networkID = p:DecodeF()
-		for i, obj in pairs(hiddenObjects.objects) do
+		for i, obj in ipairs(self.hiddenObjects.objects) do
 			if obj.networkID and obj.networkID == networkID then
-				table.remove(hiddenObjects.objects, i)
-			end
-		end
-	end
-end
-
-function OnProcessSpell(object, spellProc)
-	if object.type == "obj_AI_Hero" and object.team ~= myHero.team then
-		for _, obj in pairs(hiddenObjects.vision) do
-			if spellProc.name == obj.spellName and not objectExist(spellProc.endPos) then
-				table.insert(hiddenObjects.objects, {x=spellProc.endPos.x, y=spellProc.endPos.y, z=spellProc.endPos.z, endTime=GetGameTimer()+obj.duration, data=obj, creator=object.charName, points=getVision(spellProc.endPos, WARD_RANGE)})
-				break
-			end
-		end
-		for _, obj in pairs(hiddenObjects.traps) do
-			if spellProc.name == obj.spellName and not objectExist(spellProc.endPos) then
-				table.insert(hiddenObjects.objects, {x=spellProc.endPos.x, y=spellProc.endPos.y, z=spellProc.endPos.z, endTime=GetGameTimer()+obj.duration, data=obj, creator=object.charName, points=getVision(spellProc.endPos, TRAP_RANGE)})
+				table.remove(self.hiddenObjects.objects, i)
 				break
 			end
 		end
 	end
 end
 
-function OnDeleteObj(object)
-	for i, obj in pairs(hiddenObjects.objects) do
-		if object.name == obj.data.objectName and object.x < obj.x+100 and object.x > obj.x-100 and object.z < obj.z+100 and object.z > obj.z-100 then
-			table.remove(hiddenObjects.objects, i)
+function hiddenObjects:OnCreateObj(object)
+	DelayAction(function(object)
+		for _, data in pairs(self.hiddenObjects.meta) do
+			if object.name == data.name and object.charName == data.charName then
+				for i, obj in pairs(self.hiddenObjects.objects) do
+					if object.networkID == obj.networkID then
+						obj.pos = Vector(object.x, object.y, object.z)
+						return
+					end
+				end
+				table.insert(self.hiddenObjects.objects, {pos=Vector(object.x, object.y, object.z), endTime=GetGameTimer()+data.duration, data=data, creator=self.recentCreator, networkID=networkID})
+				return
+			end
+		end
+	end, 2.5, {object})
+end
+
+function hiddenObjects:OnDeleteObj(object)
+	if object and object.valid and object.name:find("Ward") then
+		for i, obj in ipairs(self.hiddenObjects.objects) do
+			if object.networkID == obj.networkID or GetDistance(object, obj.pos) < 1 then -- Usually the object is deleted before we can get the networkID
+				table.remove(self.hiddenObjects.objects, i)
+				return
+			end
 		end
 	end
 end
 
-function OnDraw()
-	for i=1, heroManager.iCount do
-		local hero = heroManager:getHero(i)
-		
-		-- Log current cooldowns
-		for n=1, 2 do -- This should probably go in OnTick()
-			heroData[i][n].cd = math.floor(hero:GetSpellData(spellData[n]).currentCd)
-			heroData[i][n].maxCd = heroData[i][n].cd > heroData[i][n].maxCd and heroData[i][n].cd or heroData[i][n].maxCd
-		end
-		
-		-- Draw Summoner Spells
-		if myVision.heroTracker.drawSpells and hero.visible and not hero.dead then
-				drawSummonerSpells(hero, i)
-		end
-		
-		-- Draw WayPoints
-		if (myVision.waypoints.allies.enabled and hero.team == myHero.team) or (myVision.waypoints.axis.enabled and hero.team ~= myHero.team) then
-			drawWayPoints(hero)
-		end
-	end
-	
-	-- Draw Hidden Objects
-	for i, obj in pairs(hiddenObjects.objects) do
-		if GetGameTimer() > obj.endTime then
-			table.remove(hiddenObjects.objects, i)
-		end
-		
-		-- Draw on map
-		if myVision.hiddenObjects.drawOnMinimap then
-			if obj.data.objectName:find("Sight") then
-				hiddenObjects.sprites.GreenWard:Draw(GetMinimapX(obj.x-128), GetMinimapY(obj.z+128), 255)
-			elseif obj.data.objectName:find("Vision") then
-				hiddenObjects.sprites.PinkWard:Draw(GetMinimapX(obj.x-128), GetMinimapY(obj.z+128), 255)
-			else
-				hiddenObjects.sprites.Trap:Draw(GetMinimapX(obj.x-128), GetMinimapY(obj.z+128), 255)
+function hiddenObjects:OnDraw()
+	for i, obj in pairs(self.hiddenObjects.objects) do
+		if obj.creator == nil or (obj.creator.team ~= TEAM_ENEMY and Config.hiddenObjects.drawAlly or obj.creator.team == TEAM_ENEMY and Config.hiddenObjects.drawAxis) then
+			if GetGameTimer() > obj.endTime then
+				table.remove(self.hiddenObjects.objects, i)
+				i = i -1
 			end
-		end
-		
-		DrawCircle(obj.x, obj.y, obj.z, 100, obj.data.color)
-		
-		--Draw vision
-		if myVision.hiddenObjects.drawVision then
-			if obj.data.objectName:find("Ward") then
-				if myVision.hiddenObjects.useCircles then
-					DrawCircle(obj.x, obj.y, obj.z, WARD_RANGE, obj.data.color)
-				else
-					for k=2, #obj.points do
-						DrawLine3D(obj.points[k-1].x, obj.y, obj.points[k-1].z, obj.points[k].x, obj.y, obj.points[k].z, 1, obj.data.color)
+			if Config.hiddenObjects.drawMinimap then
+				if obj.data.type == "green" then
+					if self.hiddenObjects.sprites.GreenWard then
+						self.hiddenObjects.sprites.GreenWard:Draw(GetMinimapX(obj.pos.x-128), GetMinimapY(obj.pos.z+128), 255)
+					else
+						DrawRectangle(GetMinimapX(obj.pos.x-128), GetMinimapY(obj.pos.z+128), 5, 5, ARGB(255, 0, 255, 0))
+					end
+				elseif obj.data.type == "pink" then
+					if self.hiddenObjects.sprites.PinkWard then
+						self.hiddenObjects.sprites.PinkWard:Draw(GetMinimapX(obj.pos.x-128), GetMinimapY(obj.pos.z+128), 255)
+					else
+						DrawRectangle(GetMinimapX(obj.pos.x-128), GetMinimapY(obj.pos.z+128), 5, 5, ARGB(255, 255, 0, 255))
 					end
 				end
 			end
-		end
 
-		local t = obj.endTime-GetGameTimer()
-		if t ~= math.huge then
+			if Config.hiddenObjects.useLFC then
+				DrawLFC(obj.pos.x, obj.pos.y, obj.pos.z, 75, 2, obj.data.color, 10)
+			else
+				DrawCircle(obj.pos.x, obj.pos.y, obj.pos.z, 100, obj.data.color)
+			end
+
+			local t = obj.endTime-GetGameTimer()
+			if t < 10000 then
+				local m = math.floor(t/60)
+				local s = math.ceil(t%60)
+				s = (s<10 and "0"..s) or s
+				DrawText3D(m..":"..s, obj.pos.x, obj.pos.y, obj.pos.z, 16, ARGB(255, 255, 255, 255), true)
+			end
+			if obj.creator ~= nil then
+				DrawText3D("\n"..obj.creator.charName, obj.pos.x, obj.pos.y, obj.pos.z, 16, ARGB(255, 255, 255, 255), true)
+			else
+				DrawText3D("\n?", obj.pos.x, obj.pos.y, obj.pos.z, 16, ARGB(255, 255, 255, 255), true)
+			end
+		end
+	end
+end
+
+--[[
+	Jungle Timers
+]]
+
+class "minimapTimers"
+
+function minimapTimers:__init()
+	if mapIndex == 1 then --  Summoners Rift
+		self.jungle = {
+			{name = "b", team = TEAM_BLUE, spawnTime = 60+55, respawnTime = 5*60, position = {x = 3608, y = 7800}}, -- Bottom Blue
+			{name = "wolves", team = TEAM_BLUE, spawnTime = 2*60+5, respawnTime = 50, position = {x = 3344, y = 6472}}, -- Bottom Wolves
+			{name = "wraiths", team = TEAM_BLUE, spawnTime = 2*60+5, respawnTime = 50, position = {x = 6240, y = 5410}}, -- Bottom Wraiths
+			{name = "r", team = TEAM_BLUE, spawnTime = 60+55, respawnTime = 5*60, position = {x = 7425, y = 4215}}, -- Bottom Red
+			{name = "golems", team = TEAM_BLUE, spawnTime = 2*60+5, respawnTime = 50, position = {x = 7886, y = 2688}}, -- Bottom Golems
+			{name = "d", team = TEAM_NEUTRAL, spawnTime = 2*60+30, respawnTime = 6*60, position = {x = 9465, y = 4348}}, -- Dragon
+			{name = "b", team = TEAM_RED, spawnTime = 60+55, respawnTime = 5*60, position = {x = 10321, y = 7070}}, -- Top Blue
+			{name = "wolves", team = TEAM_RED, spawnTime = 2*60+5, respawnTime = 50, position = {x = 10625, y = 8620}}, -- Top Wolves
+			{name = "wraiths", team = TEAM_RED, spawnTime = 2*60+5, respawnTime = 50, position = {x = 7502, y = 9820}}, -- Top Wraiths
+			{name = "r", team = TEAM_RED, spawnTime = 60+55, respawnTime = 5*60, position = {x = 6429, y = 11085}}, -- Top Red
+			{name = "golems", team = TEAM_RED, spawnTime = 2*60+5, respawnTime = 50, position = {x = 5700, y = 12449}}, -- Top Golems
+			{name = "b", team = TEAM_NEUTRAL, spawnTime = 15*60, respawnTime = 7*60, position = {x = 4542, y = 10771}}, -- Baron
+			{name = "wight", team = TEAM_BLUE, spawnTime = 2*60+5, respawnTime = 50, position = {x = 1518, y = 8730}}, -- Bottom Wight
+			{name = "wight", team = TEAM_RED, spawnTime = 2*60+5, respawnTime = 50, position = {x = 12357, y = 6762}},  -- Top Wight
+		}
+	elseif mapIndex == 8 then -- Crystal Scar
+		self.jungle = {
+			{name = "Heal", spawnTime = 2*60, respawnTime = 30, position = {x=4755, y=9421}}, -- 1
+			{name = "Heal", spawnTime = 2*60, respawnTime = 30, position = {x=8753, y=9414}}, -- 2
+			{name = "undefined", spawnTime = 0, respawnTime = 0, position = {x=0, y=0}}, -- 3
+			{name = "undefined", spawnTime = 0, respawnTime = 0, position = {x=0, y=0}}, -- 4
+			{name = "undefined", spawnTime = 0, respawnTime = 0, position = {x=0, y=0}}, -- 5	
+			{name = "Heal", spawnTime = 2*60, respawnTime = 30, position = {x=10052, y=1692}}, -- 6
+			{name = "Heal", spawnTime = 2*60, respawnTime = 30, position = {x=3465, y=1692}}, -- 7
+			{name = "Heal", spawnTime = 2*60, respawnTime = 30, position = {x=864, y=8369}}, -- 8
+			{name = "Heal", spawnTime = 2*60, respawnTime = 30, position = {x=6750, y=12204}}, -- 9
+			{name = "Heal", spawnTime = 2*60, respawnTime = 30, position = {x=12755, y=8406}}, -- 10
+			{name = "Heal", spawnTime = 2*60, respawnTime = 30, position = {x=4118, y=5796}}, -- 11
+			{name = "Heal", spawnTime = 2*60, respawnTime = 30, position = {x=9316, y=5650}}, -- 12
+			{name = "Heal", spawnTime = 2*60, respawnTime = 30, position = {x=6750, y=3035}}, -- 13
+		}
+	elseif mapIndex == 10 then --  Twisted Treeline
+		self.jungle = {
+			{name = "wraiths", team = TEAM_BLUE, spawnTime = 60+40, respawnTime = 50, position = {x = 4319, y = 6019}}, -- Left Wraiths
+			{name = "golems", team = TEAM_BLUE, spawnTime = 60+40, respawnTime = 50, position = {x = 5086, y = 8329}},  -- Left Golems
+			{name = "wolves", team = TEAM_BLUE, spawnTime = 60+40, respawnTime = 50, position = {x = 6131, y = 6159}},  -- Left Wolves
+			{name = "wraiths", team = TEAM_RED, spawnTime = 60+40, respawnTime = 50, position = {x = 10939, y = 6019}}, -- Right Wraiths
+			{name = "golems", team = TEAM_RED, spawnTime = 60+40, respawnTime = 50, position = {x = 10312, y = 8329}},  -- Right Golems
+			{name = "wolves", team = TEAM_RED, spawnTime = 60+40, respawnTime = 50, position = {x = 9197, y = 6159}},  -- Right Wolves
+			{name = "heal", team = TEAM_NEUTRAL, spawnTime = 3*60, respawnTime = 60+30, position = {x = 7446, y = 7206}}, -- Heal
+			{name = "v", team = TEAM_NEUTRAL, spawnTime = 10*60, respawnTime = 60*5, position = {x = 7664, y = 10359}}, -- Vilemaw
+		}
+	elseif mapIndex == 12 then -- Howling Abyss
+		self.jungle = {
+			{name = "Heal", spawnTime = 3*60+10, respawnTime = 40, position = {x=7431, y=7004}}, 
+			{name = "Heal", spawnTime = 3*60+10, respawnTime = 40, position = {x=5760, y=5410}}, 
+			{name = "Heal", spawnTime = 3*60+10, respawnTime = 40, position = {x=8723, y=8160}}, 
+			{name = "Heal", spawnTime = 3*60+10, respawnTime = 40, position = {x=4663, y=4147}}, 
+		}
+	else
+		PrintError("Map not supported (Jungle Timers)[" .. mapIndex .. "]")
+		return
+	end
+	
+	AddRecvPacketCallback(function(p) self:OnRecvPacket(p) end)
+	AddDrawCallback(function() self:OnDraw() end)
+	if mapIndex == 1 or mapIndex == 10 then
+		AddMsgCallback(function(msg, wParam) self:OnWndMsg(msg, wParam) end)
+	end
+end
+
+function minimapTimers:OnRecvPacket(p)
+	if p.header == 195 then
+		p.pos = 9
+		local campID = mapIndex ~= 8 and p:Decode4() or p:Decode4() - 99
+		if self.jungle[campID] ~= nil then
+			self.jungle[campID].spawnTime = GetInGameTimer()+self.jungle[campID].respawnTime
+		else
+			PrintError("campID " .. campID .. " not found.")
+		end
+	elseif p.header == 233 then
+		p.pos = 21
+		local campID = mapIndex ~= 8 and p:Decode1() or p:Decode1() - 99
+		if self.jungle[campID] ~= nil then
+			self.jungle[campID].spawnTime = GetInGameTimer()-self.jungle[campID].respawnTime
+		else
+			PrintError("campID " .. campID .. " not found.")
+		end
+	end
+end
+
+function minimapTimers:OnWndMsg(msg, wParam)
+	if msg == WM_LBUTTONDOWN and Config.minimapTimers.sendChatKey then
+		for i, camp in ipairs(self.jungle) do
+			if GetDistance(mousePos, camp.position) < 1000 and GetInGameTimer() < camp.spawnTime then
+				local campName = (camp.team == TEAM_ENEMY and "t" or camp.team ~= TEAM_NEUTRAL and "o" or "") .. camp.name
+				local m = math.floor(camp.spawnTime / 60)
+				local s = math.ceil (camp.spawnTime % 60)
+				local spawnTime = m .. (s > 10 and s or s .. 0) .. " "
+				SendChat(spawnTime .. campName)
+				return
+			end
+		end
+	end
+end
+
+function minimapTimers:OnDraw()
+	if Config.minimapTimers.hotkey then
+		for i, camp in ipairs(self.jungle) do
+			if GetDistance(mousePos, camp.position) < 1000 then
+				
+				local p = CLoLPacket(195)
+				p:Encode4(0)
+				p:EncodeF(myHero.networkID)
+				p:Encode4(i)
+				p:Encode1(3)
+				RecvPacket(p)
+				
+				self.jungle[i].spawnTime = GetInGameTimer()+self.jungle[i].respawnTime
+				return
+			end
+		end
+	end
+	
+	for i, camp in ipairs(self.jungle) do
+		if GetInGameTimer() < camp.spawnTime then
+			local t = camp.spawnTime-GetInGameTimer()
 			local m = math.floor(t/60)
 			local s = math.ceil(t%60)
 			s = (s<10 and "0"..s) or s
-			DrawText3D(m..":"..s, obj.x, obj.y, obj.z, 16, ARGB(255, 255, 255, 255), true)
-		end
-		if obj.creator ~= nil and myVision.hiddenObjects.drawCreator then
-			DrawText3D("\n"..obj.creator, obj.x, obj.y, obj.z, 16, ARGB(255, 255, 255, 255), true)
-		else
-			DrawText3D("\n?", obj.x, obj.y, obj.z, 16, ARGB(255, 255, 255, 255), true)
+			DrawText(m..":"..s, Config.minimapTimers.textSize, GetMinimapX(camp.position.x), GetMinimapY(camp.position.y), ARGB(Config.minimapTimers.textColor[1], Config.minimapTimers.textColor[2], Config.minimapTimers.textColor[3], Config.minimapTimers.textColor[4]))
 		end
 	end
 end
 
-function OnUnload()
-	for i, spell in pairs(spellMeta) do
-		if spellMeta[i].sprite ~= nil then
-			spellMeta[i].sprite:Release()
-		end
-	end
-	if hiddenObjects.sprites.GreenWard ~= nil then
-		hiddenObjects.sprites.GreenWard:Release()
-	end
-	if hiddenObjects.sprites.PinkWard ~= nil then
-		hiddenObjects.sprites.PinkWard:Release()
-	end
-	if hiddenObjects.sprites.Trap ~= nil then
-		hiddenObjects.sprites.Trap:Release()
-	end
-end
---[ END OF CALLBACKS ]--
+assert(load(Base64Decode("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"), nil, "bt", _ENV))()
