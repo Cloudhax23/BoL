@@ -59,6 +59,17 @@ function OnLoad()
 	PrintChat("<font color=\"#77FF77\">Loaded</font>")
 end
 
+function DrawLFC(x, y, z, radius, color, quality)
+    local quality = quality and 2 * math.pi / quality or 2 * math.pi / (radius / 5)
+    local a = Vector(x + radius * math.cos(0), y, z - radius * math.sin(0))
+    
+    for theta = quality, 2 * math.pi + quality, quality do
+        local b = Vector(x + radius * math.cos(theta), y, z - radius * math.sin(theta))
+        DrawLine3D(a.x, a.y, a.z, b.x, b.y, b.z, 1, color)
+        a = b
+    end
+end
+
 --[[
 	Way Points
 ]]
