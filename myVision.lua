@@ -252,7 +252,7 @@ function hiddenObjects:OnDraw()
 			end
 
 			if Config.hiddenObjects.useLFC then
-				DrawLFC(obj.pos.x, obj.pos.y, obj.pos.z, 75, 2, obj.data.color, 10)
+				DrawLFC(obj.pos.x, obj.pos.y, obj.pos.z, 75, obj.data.color, 10)
 			else
 				DrawCircle(obj.pos.x, obj.pos.y, obj.pos.z, 100, obj.data.color)
 			end
