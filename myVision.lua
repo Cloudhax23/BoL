@@ -83,6 +83,13 @@ function OnLoad()
 	PrintChat("<font color=\"#77FF77\">Loaded</font>")
 end
 
+function OnReady()
+	local revision = 1
+	if tonumber(GetWebResult("raw.github.com", "/Jo7j/BoL/master/myVision.rev")) > revision then
+		PrintChat("A new update is available. Please update using the menu.")
+	end
+end
+
 function OnWndMsg(msg, wParam)
 	if msg == WM_LBUTTONUP and Config.updateScript then
 		Config.updateScript = false
@@ -392,7 +399,6 @@ function minimapTimers:__init()
 	if mapIndex == 1 or mapIndex == 10 then
 		AddMsgCallback(function(msg, wParam) self:OnWndMsg(msg, wParam) end)
 	end
-	AddResetCallback(function() PrintChat("reset") end)
 end
 
 function minimapTimers:OnRecvPacket(p)
