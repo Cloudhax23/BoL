@@ -82,7 +82,7 @@ function OnLoad()
 	connectionStatus()
 	overheadHUD()
 	
-	local revision = 2
+	local revision = 3
 	if tonumber(GetWebResult("raw.github.com", "/Jo7j/BoL/master/myVision.rev")) > revision then
 		PrintChat("A new update is available. Please update using the menu.")
 	end
@@ -132,6 +132,8 @@ function GetHPBarPos(unit)
 		barPos.x = barPos.x - 8
 	elseif unit.charName == "JarvanIV" then
 		barPos.x = barPos.x - 14
+	elseif unit.charName == "Renekton" then
+		barPos.x = barPos.x - 8
 	elseif unit.charName == "XinZhao" then
 		barPos.x = barPos.x - 15
 	end
@@ -543,12 +545,12 @@ end
 function overheadHUD:OnDraw()
 	for i=1, heroManager.iCount do
 		local hero = heroManager:GetHero(i)
-		if hero and hero.valid and not hero.dead and hero.visible and not hero.isMe then
+		if hero and hero.valid and not hero.dead and hero.visible then
 			local barPos = GetHPBarPos(hero)
 			if OnScreen(barPos, barPos) then
 				if Config.overheadHUD.drawAbilities then
 					if self.OHFrame then
-						self.OHFrame:Draw(barPos.x, barPos.y+18, 255)
+						self.OHFrame:Draw(barPos.x, barPos.y + 18, 255)
 					end
 					
 					for spellId = _Q, _R do
@@ -556,13 +558,15 @@ function overheadHUD:OnDraw()
 						if spellData.level > 0 then
 							local x = barPos.x + 3 + (spellId * 26)
 							local y = barPos.y + 20
-							
-							if spellData.currentCd == 0 then
-								DrawRectangle(x, y, 25, 3, hero.mana > spellData.mana and ARGB(255, 35, 193, 26) or ARGB(255, 65, 105, 225))
+
+							if spellData.currentCd == 0 and spellData.toggleState ~= 1 then
+								DrawRectangle(x, y, 25, 3, (spellData.mana and hero.mana > spellData.mana) and ARGB(255, 35, 193, 26) or ARGB(255, 65, 105, 225))
+							elseif spellData.toggleState == 1 then
+								DrawRectangle(x, y, 25, 3, ARGB(255, 128, 0, 0))
 							else
 								local width = (spellData.totalCooldown -spellData.currentCd) / spellData.totalCooldown * 25
 								DrawRectangle(x, y, 25, 3, ARGB(255, 128, 0, 0))
-								DrawRectangle(x, y, width, 3, hero.mana > spellData.mana and ARGB(255, 32, 128, 32) or ARGB(255, 65, 105, 225))
+								DrawRectangle(x, y, width, 3, (spellData.mana and hero.mana > spellData.mana) and ARGB(255, 32, 128, 32) or ARGB(255, 65, 105, 225))
 								if Config.overheadHUD.showDetails then
 									local cd = tostring(round(spellData.currentCd))
 									local textArea = GetTextArea(cd, 14)
