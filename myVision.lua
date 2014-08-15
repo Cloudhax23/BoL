@@ -545,7 +545,7 @@ end
 function overheadHUD:OnDraw()
 	for i=1, heroManager.iCount do
 		local hero = heroManager:GetHero(i)
-		if hero and hero.valid and not hero.dead and hero.visible then
+		if hero and hero.valid and not hero.dead and hero.visible and not hero.isMe then
 			local barPos = GetHPBarPos(hero)
 			if OnScreen(barPos, barPos) then
 				if Config.overheadHUD.drawAbilities then
