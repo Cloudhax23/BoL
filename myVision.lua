@@ -82,7 +82,7 @@ function OnLoad()
 	connectionStatus()
 	overheadHUD()
 	
-	local revision = 1
+	local revision = 2
 	if tonumber(GetWebResult("raw.github.com", "/Jo7j/BoL/master/myVision.rev")) > revision then
 		PrintChat("A new update is available. Please update using the menu.")
 	end
