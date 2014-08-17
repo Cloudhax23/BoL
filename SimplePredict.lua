@@ -13,6 +13,7 @@
 		local obstacles = SimplePredict:GetCollision(startPos, endPos, speed, delay, radius, colTable)
 		local predictPos = SimplePredict:GetIdlePrediction(unit, radius)
 		local predictPos = SimplePredict:GetPredictedPosition(unit, delay, radius)
+		local predictPos = SimplePredict:GetAOEPredictedPosition(unit, delay, radius, castType)
 	
 	Hit Chance:
 		0 - Unit is not moving
@@ -21,24 +22,34 @@
 		3 - Unit is too slow (~100%)
 		4 - Unit is immobile (~100%)
 		5 - Unit is dashing/blinking (~100%)
+	
+	Thanks to Honda7 for his VPrediction library
 ]]
 
 class "SimplePredict"
 
+-- Cast Types
+--CAST_LINEAR = 0
+CAST_CIRCULAR = 1
+--CAST_CONE = 2
+
 function SimplePredict:__init()
 	self.Config = scriptConfig("SimplePredict", "SimplePredict")
 		self.Config:addSubMenu("Collision", "collision")
-			self.Config.collision:addParam("predictPos", "Predict Obstacle Positions", SCRIPT_PARAM_ONOFF, false)
-			self.Config.collision:addParam("predictHp", "Predict Obstacle Health", SCRIPT_PARAM_ONOFF, false)
+			self.Config.collision:addParam("predictPos", "Predict Obstacle Positions", SCRIPT_PARAM_ONOFF, true)
+			--self.Config.collision:addParam("predictHp", "Predict Obstacle Health", SCRIPT_PARAM_ONOFF, false)
 			self.Config.collision:addParam("extraBuffer", "Extra Collision Buffer", SCRIPT_PARAM_SLICE, 20, 0, 50, 0)
 			
 		self.Config:addParam("predictIdle", "Use Idle Prediction", SCRIPT_PARAM_ONOFF, true)
+		self.Config:addParam("reactTime", "Player Reaction Time (ms)", SCRIPT_PARAM_SLICE, 215, 0, 500, 0)
 	
 	self.heroes = {}
 	for i = 1, heroManager.iCount do
 		local hero = heroManager:GetHero(i)
-		hero.idlePredict = Vector(0, 0, 0)
-		table.insert(self.heroes, hero)
+		if hero.team == TEAM_ENEMY then -- Only insert enemies
+			hero.idlePredict = Vector(0, 0, 0)
+			table.insert(self.heroes, hero)
+		end
 	end
 	
 	AddAnimationCallback(function(unit, animation) self:OnAnimation(unit, animation) end)
@@ -57,7 +68,7 @@ end
 
 function SimplePredict:GetDistance2D(a, b)
 	local b = b or myHero
-	return math.sqrt((b.x - a.x) ^ 2 + (b.y - a.y) ^ 2)
+	return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
 end
 
 function SimplePredict:IsAttacking(unit)
@@ -73,7 +84,7 @@ function SimplePredict:IsAttacking(unit)
 end
 
 function SimplePredict:IsTooSlow(unit, time, radius)
-	return unit.ms * time < radius * 2
+	return unit.ms * (time - self.Config.reactTime) < radius * 2
 end
 
 function SimplePredict:GetHitChance(unit, radius, time)
@@ -90,31 +101,33 @@ function SimplePredict:GetHitChance(unit, radius, time)
 end
 
 function SimplePredict:CheckCollision(startPos, endPos, speed, delay, radius, colTable)
-	local distance = self:GetDistance2D(startPos, endPos)
+	local distance = GetDistance(startPos, endPos)
 	
 	for _, unit in pairs(colTable) do
-		local unit_distance = self:GetDistance2D(unit)
+		local unit_distance = GetDistance(unit)
 		if unit_distance < distance then
-			local predictPos = self:GetPredictedPosition(unit, delay + (unit_distance / speed), radius)
+			local predictPos = self.Config.collision.predictPos and self:GetPredictedPosition(unit, delay + (unit_distance / speed), radius) or unit.visionPos
 			local pointSegment, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(startPos, endPos, predictPos)
-			if isOnSegment and self:GetDistance2D(pointSegment, endPos) <= unit.boundingRadius + radius + self.Config.collision.extraBuffer then
+			if isOnSegment and GetDistance(pointSegment, predictPos) <= unit.boundingRadius + radius + self.Config.collision.extraBuffer then
+				DrawLine3D(startPos.x, startPos.y, startPos.z, pointLine.x, unit.y, pointLine.y, radius + self.Config.collision.extraBuffer, ARGB(128, 255, 0, 0))
 				return true
 			end
 		end
 	end
+	
 	return false
 end
 
 function SimplePredict:GetCollision(startPos, endPos, speed, delay, radius, colTable)
 	local obstacles = {}
-	local distance = self:GetDistance2D(startPos, endPos)
+	local distance = GetDistance(startPos, endPos)
 	
 	for _, unit in pairs(colTable) do
-		local unit_distance = self:GetDistance2D(unit)
+		local unit_distance = GetDistance(unit)
 		if unit_distance < distance then
-			local predictPos = self:GetPredictedPosition(unit, delay + (unit_distance / speed), radius)
+			local predictPos = self.Config.collision.predictPos and self:GetPredictedPosition(unit, delay + (unit_distance / speed), radius) or unit.visionPos
 			local pointSegment, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(startPos, endPos, predictPos)
-			if isOnSegment and self:GetDistance2D(pointSegment, endPos) <= unit.boundingRadius + radius + self.Config.collision.extraBuffer then
+			if isOnSegment and GetDistance(pointSegment, predictPos) <= unit.boundingRadius + radius + self.Config.collision.extraBuffer then
 				table.insert(obstacles, unit)
 			end
 		end
@@ -155,4 +168,44 @@ function SimplePredict:GetPredictedPosition(unit, delay, radius)
 	end
 	
 	return predictPos
+end
+
+function SimplePredict:GetAOEPredictedPosition(unit, delay, radius, castType)
+	if castType == CAST_CIRCULAR then
+		local mainPos = self:GetPredictedPosition(unit, delay, radius)
+		local positions = {}
+		table.insert(positions, mainPos)
+		
+		for _, hero in pairs(self.heroes) do
+			if hero.networkID ~= unit.networkID and unit.valid and not unit.dead and unit.visible then
+				local predictPos = self:GetPredictedPosition(hero, delay, radius)
+				if GetDistance(mainPos, predictPos) < radius * 2 then
+					table.insert(positions, predictPos)
+				end
+			end
+		end
+		
+		while #positions > 1 do
+			local mec = MEC(positions)
+			local circle = mec:Compute()
+			
+			if circle.radius <= radius then
+				return circle.center, #positions
+			end
+			
+			local index = nil
+			local result = 0
+			for i = 2, #positions do
+				local distance = GetDistance(mainPos, positions[i])
+				if distance > result then
+					index = i
+					result = distance
+				end
+			end
+			
+			table.remove(positions, index)
+		end
+		
+		return mainPos, #positions
+	end
 end
