@@ -12,7 +12,7 @@
 		local obstacles = SimplePredict:GetCollision(startPos, endPos, speed, delay, radius, colTable)
 		local predictPos = SimplePredict:GetIdlePrediction(unit, radius)
 		local predictPos = SimplePredict:GetPredictedPosition(unit, delay, radius)
-		local predictPos = SimplePredict:GetAOEPredictedPosition(unit, delay, radius, castType)
+		local predictPos = SimplePredict:GetAOEPredictedPosition(unit, delay, radius)
 	
 	Hit Chance:
 		0 - Unit is not moving
@@ -26,10 +26,6 @@
 ]]
 
 class "SimplePredict"
-
--- Cast Types
-CAST_LINEAR = 0
-CAST_CIRCULAR = 1
 
 function SimplePredict:__init()
 	self.Config = scriptConfig("SimplePredict", "SimplePredict")
@@ -164,7 +160,7 @@ function SimplePredict:GetPredictedPosition(unit, delay, radius)
 	return predictPos
 end
 
-function SimplePredict:GetAOEPredictedPosition(unit, delay, radius, castType)
+function SimplePredict:GetAOEPredictedPosition(unit, delay, radius)
 	local mainPos = self:GetPredictedPosition(unit, delay, radius)
 	local positions = {}
 	table.insert(positions, mainPos)
@@ -178,28 +174,26 @@ function SimplePredict:GetAOEPredictedPosition(unit, delay, radius, castType)
 		end
 	end
 	
-	if castType == CAST_CIRCULAR or castType == CAST_LINEAR then -- This was taken out of Honda7's VPrediction
-		while #positions > 1 do
-			local mec = MEC(positions)
-			local circle = mec:Compute()
-			
-			if circle.radius <= radius then
-				return circle.center, #positions
-			end
-			
-			local index = nil
-			local result = 0
-			for i = 2, #positions do
-				local distance = GetDistance(mainPos, positions[i])
-				if distance > result then
-					index = i
-					result = distance
-				end
-			end
-			
-			table.remove(positions, index)
+	while #positions > 1 do
+		local mec = MEC(positions)
+		local circle = mec:Compute()
+		
+		if circle.radius <= radius then
+			return circle.center, #positions
 		end
 		
-		return mainPos, #positions
+		local index = nil
+		local result = 0
+		for i = 2, #positions do
+			local distance = GetDistance(mainPos, positions[i])
+			if distance > result then
+				index = i
+				result = distance
+			end
+		end
+		
+		table.remove(positions, index)
 	end
+	
+	return mainPos, #positions
 end
