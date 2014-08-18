@@ -5,7 +5,6 @@
 	SP = SimplePredict()
 	
 	Methods:
-		local distance = SimplePredict:GetDistance2D(a, b)
 		local isAttacking = SimplePredict:IsAttacking(unit)
 		local isTooSlow = SimplePredict:IsTooSlow(unit, time, radius)
 		local hitChance = SimplePredict:GetHitChance(unit, radius, delay)
@@ -29,9 +28,8 @@
 class "SimplePredict"
 
 -- Cast Types
---CAST_LINEAR = 0
+CAST_LINEAR = 0
 CAST_CIRCULAR = 1
---CAST_CONE = 2
 
 function SimplePredict:__init()
 	self.Config = scriptConfig("SimplePredict", "SimplePredict")
@@ -42,6 +40,7 @@ function SimplePredict:__init()
 			
 		self.Config:addParam("predictIdle", "Use Idle Prediction", SCRIPT_PARAM_ONOFF, true)
 		self.Config:addParam("reactTime", "Player Reaction Time (ms)", SCRIPT_PARAM_SLICE, 215, 0, 500, 0)
+		self.Config:addParam("debug", "Debug Mode (Drawing)", SCRIPT_PARAM_ONOFF, false)
 	
 	self.heroes = {}
 	for i = 1, heroManager.iCount do
@@ -64,11 +63,6 @@ function SimplePredict:OnAnimation(unit, animation)
 			end
 		end
 	end
-end
-
-function SimplePredict:GetDistance2D(a, b)
-	local b = b or myHero
-	return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
 end
 
 function SimplePredict:IsAttacking(unit)
@@ -171,20 +165,20 @@ function SimplePredict:GetPredictedPosition(unit, delay, radius)
 end
 
 function SimplePredict:GetAOEPredictedPosition(unit, delay, radius, castType)
-	if castType == CAST_CIRCULAR then
-		local mainPos = self:GetPredictedPosition(unit, delay, radius)
-		local positions = {}
-		table.insert(positions, mainPos)
-		
-		for _, hero in pairs(self.heroes) do
-			if hero.networkID ~= unit.networkID and unit.valid and not unit.dead and unit.visible then
-				local predictPos = self:GetPredictedPosition(hero, delay, radius)
-				if GetDistance(mainPos, predictPos) < radius * 2 then
-					table.insert(positions, predictPos)
-				end
+	local mainPos = self:GetPredictedPosition(unit, delay, radius)
+	local positions = {}
+	table.insert(positions, mainPos)
+	
+	for _, hero in pairs(self.heroes) do
+		if hero.networkID ~= unit.networkID and unit.valid and not unit.dead and unit.visible then
+			local predictPos = self:GetPredictedPosition(hero, delay, radius)
+			if GetDistance(mainPos, predictPos) <= radius * 2 then
+				table.insert(positions, predictPos)
 			end
 		end
-		
+	end
+	
+	if castType == CAST_CIRCULAR or castType == CAST_LINEAR then -- This was taken out of Honda7's VPrediction
 		while #positions > 1 do
 			local mec = MEC(positions)
 			local circle = mec:Compute()
