@@ -23,6 +23,8 @@ function OnLoad()
 		Config.updateScript = false -- Prevent scriptConfig from reading saved value
 
 	LoadOverheadHUD()
+
+	Print("<font color=\"#77FF77\">Loaded</font>")
 end
 
 function OnWndMsg(a, b)
@@ -38,38 +40,19 @@ end
 function LoadOverheadHUD()
 	-- Load the sprites
 	local abilityFrame = FileExist(SPRITE_PATH .. "myVision\\abilityFrame.png") and createSprite("myVision\\abilityFrame.png")
-
-	-- Retrieve sprites
 	local summonerSprites = { }
-	for _, spellName in pairs({
-		"itemsmiteaoe", 
-		"s5_summonersmiteduel", 
-		"s5_summonersmiteplayerganker", 
-		"s5_summonersmitequick", 
-		"snowballfollowupcast", 
-		"summonerbarrier", 
-		"summonerboost", 
-		"summonerclairvoyance", 
-		"summonerdot", 
-		"summonerexhaust", 
-		"summonerflash", 
-		"summonerhaste", 
-		"summonerheal", 
-		"summonermana", 
-		"summonerodingarrison", 
-		"summonerpororecall", 
-		"summonerporothrow", 
-		"summonerrevive", 
-		"summonersmite", 
-		"summonersnowball", 
-		"summonerteleport"
-	}) do
+
+	for _, spellName in pairs({"itemsmiteaoe", "s5_summonersmiteduel", "s5_summonersmiteplayerganker", "s5_summonersmitequick", 
+		"snowballfollowupcast", "summonerbarrier", "summonerboost", "summonerclairvoyance", "summonerdot", 
+		"summonerexhaust", "summonerflash", "summonerhaste", "summonerheal", "summonermana", 
+		"summonerodingarrison", "summonerpororecall", "summonerporothrow", "summonerrevive", "summonersmite", 
+		"summonersnowball", "summonerteleport"}) do
 		local location = "myVision\\spells\\" .. spellName .. ".png"
 
 		if FileExist(SPRITE_PATH .. location) then
 			summonerSprites[spellName] = createSprite(location)
 		else
-			print(location .. " not found")
+			Print(location .. " not found.")
 		end
 	end
 
@@ -140,12 +123,13 @@ end
 --[[
 	Utility functions
 
+	Print(value) - Prints value to chat.
 	round(float) - Returns the rounded number from float.
 	GetAbilityFramePos(unit) - Returns the top-left corner of where the ability frame should be positioned.
 ]]
 
-function Print(a)
-	PrintChat("<font color=\"#AAAAAA\"><b>myVision (rev. " .. revision .. ")</b>: </font><font color=\"#FFFFFF\">" .. a .. "</font>")
+function Print(value)
+	PrintChat("<font color=\"#AAAAAA\"><b>myVision (rev. " .. revision .. ")</b>: </font><font color=\"#FFFFFF\">" .. value .. "</font>")
 end
 
 function round(a)
