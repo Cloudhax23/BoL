@@ -9,10 +9,11 @@
 			open-source awareness script
 ]]
 
-local revision = 11
+local revision = 12
 
 local abilityFrame = FileExist(SPRITE_PATH .. "myVision\\abilityFrame.png") and createSprite("myVision\\abilityFrame.png")
 local summonerSprites = { }
+local spellData = { }
 
 function OnLoad()
 	-- Get latest revision
@@ -49,6 +50,21 @@ function OnLoad()
 
 	summonerSprites["teleportcancel"] = summonerSprites["summonerteleport"]
 
+	for i = 1, heroManager.iCount do
+		local hero = heroManager:getHero(i)
+
+		if hero and hero.valid then
+			spellData[i] = {
+				[_Q] = hero:GetSpellData(_Q), 
+				[_W] = hero:GetSpellData(_W), 
+				[_E] = hero:GetSpellData(_E), 
+				[_R] = hero:GetSpellData(_R), 
+				[SUMMONER_1] = hero:GetSpellData(SUMMONER_1), 
+				[SUMMONER_2] = hero:GetSpellData(SUMMONER_2), 
+			}
+		end
+	end
+
 	Print("<font color=\"#77FF77\">Loaded</font>")
 end
 
@@ -79,14 +95,14 @@ function OnDraw()
 				end
 
 				for spellID = _Q, _R do
-					local spellData = hero:GetSpellData(spellID)
+					local spellData = spellData[i][spellID]
 
 					if spellData.level > 0 then
 						local spellPos = Point(framePos.x + 3 + (spellID * 26), framePos.y + 3)
 
-						if spellData.currentCd < 1 and spellData.toggleState == 0 then -- Ability is off cooldown
+						if spellData.currentCd < 1 and not spellData.isToggleSpell then -- Ability is off cooldown
 							DrawLine(spellPos.x, spellPos.y, spellPos.x + 25, spellPos.y, 3, ARGB(255, 50, 205, 50))
-						elseif spellData.toggleState > 0 then
+						elseif spellData.isToggleSpell and spellData.toggleState > 0 then
 							DrawLine(spellPos.x, spellPos.y, spellPos.x + 25, spellPos.y, 3, spellData.toggleState == 2 and ARGB(255, 50, 205, 50) or ARGB(255, 46, 139, 87))
 						else
 							DrawLine(spellPos.x, spellPos.y, spellPos.x + 25, spellPos.y, 3, ARGB(255, 128, 0, 0))
@@ -103,7 +119,7 @@ function OnDraw()
 				local barPos = hero.isMe and Point(framePos.x + 110, framePos.y - 16) or Point(framePos.x - 13, framePos.y - 16)
 					
 				for spellID = SUMMONER_1, SUMMONER_2 do
-					local spellData = hero:GetSpellData(spellID)
+					local spellData = spellData[i][spellID]
 					local midPos = Point(barPos.x + 6, barPos.y + (spellID - SUMMONER_1) * 13 + 6)
 
 					if spellData.currentCd > 0 then
