@@ -9,7 +9,7 @@
 			open-source awareness script
 ]]
 
-local REVISION = 13
+local REVISION = 14
 
 local allyHeroes, enemyHeroes = GetAllyHeroes(), GetEnemyHeroes()
 local rad, sin, cos = math.rad, math.sin, math.cos
@@ -26,8 +26,6 @@ for _, spellName in pairs({"itemsmiteaoe", "s5_summonersmiteduel", "s5_summoners
 
 	if FileExist(SPRITE_PATH .. location) then
 		summonerSprites[spellName] = createSprite(location)
-	else
-		Print(location .. " not found.")
 	end
 end
 
@@ -71,14 +69,10 @@ function OnLoad()
 end
 
 function OnUnload()
-	if abilityFrame then
-		abilityFrame:Release()
-	end
+	if abilityFrame then abilityFrame:Release() end
 
 	for spellName, sprite in pairs(summonerSprites) do
-		if sprite then
-			sprite:Release()
-		end
+		if sprite then sprite:Release() end
 	end
 end
 
@@ -93,22 +87,26 @@ function OnWndMsg(a, b)
 end
 
 function OnDraw()
-	for _, ally in pairs(allyHeroes) do
-		if Config.ally.active and ally.visible and ally.bTargetable and not ally.dead then
-			local framePos = GetAbilityFramePos(ally)
+	if Config.ally.active then
+		for _, ally in pairs(allyHeroes) do
+			if ally.visible and ally.bTargetable and not ally.dead then
+				local framePos = GetAbilityFramePos(ally)
 				
-			if OnScreen(framePos, framePos) then
-				DrawOverheadHUD(ally, framePos)
+				if OnScreen(framePos, framePos) then
+					DrawOverheadHUD(ally, framePos)
+				end
 			end
 		end
 	end
 
-	for _, enemy in pairs(enemyHeroes) do
-		if Config.enemy.active and enemy.visible and enemy.bTargetable and not enemy.dead then
-			local framePos = GetAbilityFramePos(enemy)
+	if Config.enemy.active then
+		for _, enemy in pairs(enemyHeroes) do
+			if enemy.visible and enemy.bTargetable and not enemy.dead then
+				local framePos = GetAbilityFramePos(enemy)
 				
-			if OnScreen(framePos, framePos) then
-				DrawOverheadHUD(enemy, framePos)
+				if OnScreen(framePos, framePos) then
+					DrawOverheadHUD(enemy, framePos)
+				end
 			end
 		end
 	end
@@ -172,6 +170,7 @@ end
 
 	Print(value) - Prints value to chat.
 	GetAbilityFramePos(unit) - Returns the top-left corner of where the ability frame should be positioned.
+	CalculateCollapsePotential() - Returns the number of enemies that could potentially collapse.
 ]]
 
 function Print(value)
@@ -184,12 +183,15 @@ function GetAbilityFramePos(unit)
 
 	do -- For some reason the x offset never exists
 		local t = {
-			["Renekton"] = -0.05
+			["Darius"] = -0.05, 
+			["Renekton"] = -0.05, 
+			["Sion"] = -0.05, 
+			["Thresh"] = 0.03, 
 		}
 		barOffset.x = t[unit.charName] or 0
 	end
 
-	return Point(barPos.x - 69 + barOffset.x * 150, barPos.y + barOffset.y * 52.5 + 12.5)
+	return Point(barPos.x - 69 + barOffset.x * 150, barPos.y + barOffset.y * 50 + 12.5)
 end
 
 -- ScriptStatus Lua Plugin
