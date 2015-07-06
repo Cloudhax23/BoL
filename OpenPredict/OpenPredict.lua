@@ -193,4 +193,8 @@ function predictInfo:setCastPos(p)
   self.mCastPos = D3DXVECTOR3(p.x, p.y, p.z)
 end
 
+function predictInfo:hitChance()
+
+end
+
 PrintChat("<font color=\"#1E90FF\"><b>[OpenPredict]</b> </font><font color=\"#FFFFFF\">Loaded</font>")
