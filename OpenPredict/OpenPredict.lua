@@ -149,7 +149,7 @@ function GetPrediction(unit, spellData)
 		pI:setCastPos(D3DXVECTOR3(math.cos(phi) * dx - math.sin(phi) * dy + source.x, navPath.endPath.y, math.sin(phi) * dx + math.cos(phi) * dy + source.z))
 	else
 		pI:setPredictPos(unit)
-    pI:setCastPos(unit)
+		pI:setCastPos(unit)
 	end
 
 	return pI
