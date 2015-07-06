@@ -68,7 +68,7 @@ function GetPrediction(unit, spellData)
   local pI = predictInfo()
 
   if (unit.isMoving and unit.hasMovePath) or not unit.visible then
-    local navPath, prevPath = unit.path, unit.pos
+		local navPath, prevPath = unit.path, unit.pos
 		local tA, miaTime = 0, 0
 
 		-- Overwrite the navPath if unit is invisible
@@ -83,10 +83,10 @@ function GetPrediction(unit, spellData)
 			end
 		end
 
-    for i = navPath.curPath, navPath.count do
-    	local path, tB = navPath:Path(i)
+		for i = navPath.curPath, navPath.count do
+			local path, tB = navPath:Path(i)
 
-      if path then
+			if path then
 				-- Calculate the distance across current path
 				local d = math.sqrt((prevPath.x - path.x) ^ 2 + (prevPath.z - path.z) ^ 2)
 
@@ -135,7 +135,7 @@ function GetPrediction(unit, spellData)
 
 			-- Path isn't our "golden" path, save current cumulated data and continue
 			prevPath = path; tA = tB
-    end
+		end
 
 		pI:setPredictPos(navPath.endPath)
 
@@ -147,10 +147,10 @@ function GetPrediction(unit, spellData)
 		-- Rotate the vector
 		local dx, dy = navPath.endPath.x - source.x, navPath.endPath.z - source.z
 		pI:setCastPos(D3DXVECTOR3(math.cos(phi) * dx - math.sin(phi) * dy + source.x, navPath.endPath.y, math.sin(phi) * dx + math.cos(phi) * dy + source.z))
-  else
+	else
 		pI:setPredictPos(unit)
     pI:setCastPos(unit)
-  end
+	end
 
 	return pI
 end
@@ -191,10 +191,6 @@ end
 function predictInfo:setCastPos(p)
   self.x = p.x; self.y = p.y; self.z = p.z
   self.mCastPos = D3DXVECTOR3(p.x, p.y, p.z)
-end
-
-function predictInfo:hitChance()
-
 end
 
 PrintChat("<font color=\"#1E90FF\"><b>[OpenPredict]</b> </font><font color=\"#FFFFFF\">Loaded</font>")
