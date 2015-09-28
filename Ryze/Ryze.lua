@@ -1,7 +1,8 @@
 --[[
-  Jorj's Ryze (v0.21)
+  Jorj's Ryze (v0.32)
 
   Changelog:
+    v0.32 - Improved combo logic and humanizer. Added circle width option.
     v0.21 - Improved Desperate Power (R) logic and basic attack prevention
     v0.1 - Initial release
 ]]
