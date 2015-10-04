@@ -1,7 +1,8 @@
 --[[
-  Jorj's Ryze (v0.42)
+  Jorj's Ryze (v0.48)
 
   Changelog:
+    v0.48 - Reworked collision trace, added passive stacking as per request
     v0.42 - Various small bug fixes, 
       passive support for SxOrbwalk, 
       harass method improvements and manual target selection.
