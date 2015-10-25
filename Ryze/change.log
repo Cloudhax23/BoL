@@ -1,0 +1,50 @@
+Version 0.1
+  - Initial release.
+
+Version 0.21
+  - Improved Desperate Power (R) logic.
+  - Improved Basic Attack prevention.
+
+Version 0.32
+  - Improved combat logic.
+  - Improved humanizer.
+  - Added circle width option.
+
+Version 0.41
+  - Increased humanizer cap to 1.
+  - Added harass method (default hotkey: C).
+
+Version 0.42
+  - Various small bug fixes.
+  - Passive support for SxOrbwalk (automatic key bindings).
+  - Harass method improvements.
+  - Added manual target selection (double-click).
+
+Version 0.48
+  - Reworked collision trace.
+  - Attack passive stacking using Overload (Q) (default hotkey: Z).
+
+Version 0.5
+  - Added farm method (default hotkey: X)
+
+Version 0.54
+  - Various calculation improvements.
+  - Visual settings update.
+
+Version 0.56
+  - Small bug fixes.
+
+Version 0.64
+  - Added packet casting (off by default).
+  - Added clear method (default hotkey: V).
+  - Added option to increase collision trace width.
+  - General improvements to logics within script.
+
+Version 0.67
+  - Updated packet casting to latest patch (5.20).
+  - Added support for Seraph's Embrace.
+
+Version 0.68
+  - Fixed small bug with packet casting.
+  - Improved cast logic for Desperate Power (R).
+  - Improved cast logic for Seraph's Embrace.
