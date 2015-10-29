@@ -1,7 +1,8 @@
 --[[
-  Arcane Ryze (v0.68)
+  Arcane Ryze (v0.69)
 
   Changelog:
+    v0.69 - Updated target selector, udpated spell cast packet to 5.21.
     v0.68 - Fixed small packet cast bug, improved Desperate Power (R) logic and Seraph's Embrace.
     v0.67 - Updated packet casting to 5.20, Added support for Seraph's Embrace.
     v0.64 - Added packet casting (off by default), 
