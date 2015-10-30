@@ -53,3 +53,6 @@ Version 0.69
   - Updated target selector to now take into account invulnerability buffs and Alistar Ult 
     (Tryndamere and Kindred ult need to be added).
   - Updated spell cast packet to patch 5.21.
+
+Version 0.691
+  - Fixed "pCast" spam with packet casting.
