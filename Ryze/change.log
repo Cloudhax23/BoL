@@ -56,3 +56,7 @@ Version 0.69
 
 Version 0.691
   - Fixed "pCast" spam with packet casting.
+
+Version 0.74
+  - Added Overhead HUD (Ability cooldown timers).
+  - Temp fix issued for BoL buff timer bug.
