@@ -60,3 +60,9 @@ Version 0.691
 Version 0.74
   - Added Overhead HUD (Ability cooldown timers).
   - Temp fix issued for BoL buff timer bug.
+
+Version 0.81
+  - Added Skin Modifier! (credits to PvPSuite).
+  - Fixed range bug with minion Q farming (1000 decreased to 900).
+  - Improved damage calculations now taking into account bonus AP (thanks to Xivia for updated API).
+  - Collision trace improvement.
