@@ -65,4 +65,5 @@ Version 0.81
   - Added Skin Modifier! (credits to PvPSuite).
   - Fixed range bug with minion Q farming (1000 decreased to 900).
   - Improved damage calculations now taking into account bonus AP (thanks to Xivia for updated API).
+  - Fixed prediction issue with casting Q after W.
   - Collision trace improvement.
