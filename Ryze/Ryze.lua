@@ -1,7 +1,8 @@
 --[[
-  Arcane Ryze (v0.81)
+  Arcane Ryze (v0.84)
 
   Changelog:
+    v0.84 - Movement block during combo, improved Desperate Power (R) logic, attack block bug fix.
     v0.81 - Added Skin Modifier (credits to PvPSuite), various bug fixes.
     v0.74 - Added Overhead HUD, temp fix implemented for BoL buff timer issue.
     v0.691 - Fixed "pCast" spam with packet casting.
