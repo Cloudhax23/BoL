@@ -73,3 +73,11 @@ Version 0.84
   - Improved Desperate Power (R) logic.
   - Fixed "Prevent Basic Attacks" menu option (always on).
   - Improved Rune Prison (W) prediction.
+
+Version 0.92
+  - Combo algorithm update (combo should be smoother/longer now).
+  - Menu cleanup.
+  - Changed chat messages.
+  - Updated target selector (SHIFT + Left Mouse to force target/remove) (Now also takes CDR into account).
+  - Improved humanizer.
+  - Updated collision trace.
