@@ -81,3 +81,10 @@ Version 0.92
   - Updated target selector (SHIFT + Left Mouse to force target/remove) (Now also takes CDR into account).
   - Improved humanizer.
   - Updated collision trace.
+
+Version 0.94
+  - Code cleanup!
+  - Input buffering on targeted spells.
+  - Global humanizer!
+  - Passive stacking no longer casting while channeling.
+  - Various bug fixes.
