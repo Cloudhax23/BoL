@@ -1,7 +1,8 @@
 --[[
-  Arcane Ryze (v0.92)
+  Arcane Ryze (v0.94)
 
   Changelog:
+    v0.94 - Code cleanup, input buffer, global humanizer, various bug fixes.
     v0.92 - Combo algorithm update, updated some visual aspects, collision update, humanizer update.
     v0.84 - Movement block during combo, improved Desperate Power (R) logic, attack block bug fix.
     v0.81 - Added Skin Modifier (credits to PvPSuite), various bug fixes.
