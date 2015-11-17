@@ -88,3 +88,6 @@ Version 0.94
   - Global humanizer!
   - Passive stacking no longer casting while channeling.
   - Various bug fixes.
+
+Version 0.95
+  - Reworked Desperate Power (R) logic.
