@@ -91,3 +91,8 @@ Version 0.94
 
 Version 0.95
   - Reworked Desperate Power (R) logic.
+
+Version 0.97
+  - ArcanePredict initial release!
+  - Modifier key now optional
+  - Fixed farm mode bugs
