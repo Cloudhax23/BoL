@@ -102,3 +102,6 @@ Version 1.01
   - Combo fix (slightly faster).
   - Passive support for Nebelwolfi's Moon Walker.
   - Skin modifier updated for patch 5.23 (includes Ryze Whitebeard skin).
+
+Version 1.02
+  - Small bug fixes (UpdateBuff callback is still broken, wait for BoL update).
