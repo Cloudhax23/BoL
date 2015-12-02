@@ -110,3 +110,8 @@ Version 1.03
   - Small bug fixes
   - Updated collision function to use custom unit manager (previously AllClass minion manager).
   - Updated clear method to use clustering algorithm.
+
+Version 1.04
+  - Collision now ignores heroes (Q not casting fix).
+  - Fixed chat spam ~line 160.
+  - Added extra checks to Animation callbacks (prevent bugsplat).
