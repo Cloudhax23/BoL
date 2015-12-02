@@ -105,3 +105,8 @@ Version 1.01
 
 Version 1.02
   - Small bug fixes (UpdateBuff callback is still broken, wait for BoL update).
+
+Version 1.03
+  - Small bug fixes
+  - Updated collision function to use custom unit manager (previously AllClass minion manager).
+  - Updated clear method to use clustering algorithm.
